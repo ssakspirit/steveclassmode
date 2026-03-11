@@ -7,7 +7,8 @@
 let ws = null;
 let players = new Map();
 let reconnectAttempts = 0;
-let hostPlayerName = null;
+let hostPlayerName = null;   // 모드 전환 명령어에서 호스트(선생님) 제외 대상 필터링용
+let isMinecraftConnected = false;  // 토글 관제 진위: MC 연결 여부
 let isWorldPaused = false;
 const MAX_RECONNECT = 5;
 
@@ -72,10 +73,12 @@ function handleServerMessage(message) {
         return;
       }
 
-      // 초기 상태 수신
+      // 이미 마인크래프트가 연결되어 있는 상태에서 대시보드에 접구
+      isMinecraftConnected = message.data.connected;
+      updateHostUI();
+      
       if (message.data.hostPlayerName) {
         hostPlayerName = message.data.hostPlayerName;
-        updateHostUI();
       }
       
       if (message.data.players) {
@@ -92,7 +95,6 @@ function handleServerMessage(message) {
 
     case 'host_assigned':
       hostPlayerName = message.data.name;
-      updateHostUI();
       break;
 
     case 'player_join':
@@ -111,27 +113,27 @@ function handleServerMessage(message) {
     case 'player_move':
       const movedPlayer = players.get(message.data.name);
       if (movedPlayer) {
-        if (message.data.position) {
-          movedPlayer.position = message.data.position;
-        }
-        if (message.data.dimension) {
-          movedPlayer.dimension = message.data.dimension;
-        }
+        if (message.data.position) movedPlayer.position = message.data.position;
+        if (message.data.dimension) movedPlayer.dimension = message.data.dimension;
         updatePlayerList();
       }
       break;
 
     case 'player_chat':
     case 'command_response':
-      // 로그 무시 (미니멀리즘 테마)
       break;
 
     case 'minecraft_connected':
       console.log('🎮 마인크래프트가 서버에 연결되었습니다!');
+      isMinecraftConnected = true;
+      updateHostUI();
       break;
 
     case 'minecraft_disconnected':
       console.log('⚠️ 마인크래프트 연결이 끊어졌습니다.');
+      isMinecraftConnected = false;
+      hostPlayerName = null;
+      updateHostUI();
       players.forEach(p => p.isConnected = false);
       updatePlayerList();
       break;
@@ -224,38 +226,22 @@ function sendCommand(cmdStr) {
 // ==================== 주의 집중 (월드 퍼즈 토글) ====================
 
 function updateHostUI() {
-  const inputs = document.querySelectorAll('.mc-setting-input');
-  
-  inputs.forEach(input => {
-    if (hostPlayerName) {
-      input.disabled = false;
-      input.closest('.mc-settings-row').title = `호스트(${hostPlayerName})를 제외한 모든 학생을 제어합니다.`;
-    } else {
-      input.disabled = true;
-      input.closest('.mc-settings-row').title = '아직 방장(선생님)이 인식되지 않았습니다.';
-      
-      // 글자색 어둡게
-      const textSpan = input.closest('.mc-settings-row').querySelector('.toggle-text');
-      if (textSpan) textSpan.style.color = '#888';
-    }
-  });
-
-  // 기존 주의 집중 토글을 위한 텍스트 처리 백업 (필요 시)
-  const toggleText = document.getElementById('toggle-text-status');
-  if (toggleText && !hostPlayerName) {
-    toggleText.style.color = '#888';
+  if (isMinecraftConnected) {
+    document.body.classList.remove('host-offline');
+  } else {
+    document.body.classList.add('host-offline');
   }
 }
 
 function toggleWorldPause() {
-  if (!hostPlayerName) {
-    alert('아직 선생님(호스트) 플레이어가 접속되지 않아 기능을 사용할 수 없습니다.');
-    const toggleInput = document.getElementById('toggle-world-pause');
-    toggleInput.checked = false; // 불법 조작 방지
+  const toggleInput = document.getElementById('toggle-world-pause');
+  
+  if (!isMinecraftConnected) {
+    alert('마인크래프트와 연결되지 않았습니다. 메입니다. /connect localhost:3000 을 먼저 실행해주세요.');
+    toggleInput.checked = !toggleInput.checked;
     return;
   }
 
-  const toggleInput = document.getElementById('toggle-world-pause');
   const toggleText = document.getElementById('toggle-text-status');
   // 월드 변경 불가 스위치 연동용
   const immutableInput = document.getElementById('toggle-immutable');
@@ -297,9 +283,14 @@ function toggleWorldPause() {
 
 // 7종 신규 클래스룸 설정 토글 핸들러
 function toggleSetting(type) {
-  if (!hostPlayerName) return;
-
   const toggleInput = document.getElementById(`toggle-${type}`);
+  
+  if (!isMinecraftConnected) {
+    alert('마인크래프트와 연결되지 않았습니다. /connect localhost:3000 을 먼저 실행해주세요.');
+    toggleInput.checked = !toggleInput.checked;
+    return;
+  }
+
   const isChecked = toggleInput.checked;
   const toggleText = toggleInput.closest('.mc-settings-row').querySelector('.toggle-text');
 

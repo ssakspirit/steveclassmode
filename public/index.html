@@ -215,16 +215,16 @@
     }
 
     /* 비활성화 상태 (선생님 접속 전) */
-    input:disabled + .mc-toggle .mc-toggle-slider {
-      background-color: #6b6b6b;
-      border-top-color: #8b8b8b;
-      border-left-color: #8b8b8b;
-      border-bottom-color: #3b3b3b;
-      border-right-color: #3b3b3b;
+    .host-offline .mc-toggle-slider {
+      background-color: #6b6b6b !important;
+      border-top-color: #8b8b8b !important;
+      border-left-color: #8b8b8b !important;
+      border-bottom-color: #3b3b3b !important;
+      border-right-color: #3b3b3b !important;
     }
     
-    input:disabled ~ .mc-toggle-text {
-      color: #888;
+    .host-offline .toggle-text {
+      color: #888 !important;
     }
 
     /* 텍스트 라벨 */
@@ -296,7 +296,7 @@
     }
   </style>
 </head>
-<body>
+<body class="host-offline">
 
   <!-- 전체 윈도우 프레임 -->
   <div class="window">
@@ -340,7 +340,7 @@
           <div class="mc-settings-row" title="아직 방장(선생님)이 인식되지 않았습니다.">
             <div class="mc-icon">⏸️</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-world-pause" class="mc-setting-input" disabled onchange="toggleWorldPause()">
+              <input type="checkbox" id="toggle-world-pause" class="mc-setting-input" onchange="toggleWorldPause()">
               <div class="mc-toggle">
                 <div class="mc-toggle-slider"></div>
               </div>
@@ -352,7 +352,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">🧨</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-tnt" class="mc-setting-input" disabled onchange="toggleSetting('tnt')">
+              <input type="checkbox" id="toggle-tnt" class="mc-setting-input" onchange="toggleSetting('tnt')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">TNT 금지</span>
             </label>
@@ -362,7 +362,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">🧟</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-mobs" class="mc-setting-input" disabled onchange="toggleSetting('mobs')">
+              <input type="checkbox" id="toggle-mobs" class="mc-setting-input" onchange="toggleSetting('mobs')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">몹 금지</span>
             </label>
@@ -372,7 +372,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">⚔️</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-pvp" class="mc-setting-input" disabled onchange="toggleSetting('pvp')">
+              <input type="checkbox" id="toggle-pvp" class="mc-setting-input" onchange="toggleSetting('pvp')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">PvP 금지</span>
             </label>
@@ -382,7 +382,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">☀️</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-weather" class="mc-setting-input" disabled onchange="toggleSetting('weather')">
+              <input type="checkbox" id="toggle-weather" class="mc-setting-input" onchange="toggleSetting('weather')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">항상 맑음</span>
             </label>
@@ -392,7 +392,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">🚫</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-immutable" class="mc-setting-input" disabled onchange="toggleSetting('immutable')">
+              <input type="checkbox" id="toggle-immutable" class="mc-setting-input" onchange="toggleSetting('immutable')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">변경 불가</span>
             </label>
@@ -402,7 +402,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">🦅</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-flight" class="mc-setting-input" disabled onchange="toggleSetting('flight')">
+              <input type="checkbox" id="toggle-flight" class="mc-setting-input" onchange="toggleSetting('flight')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">비행 허용</span>
             </label>
@@ -412,7 +412,7 @@
           <div class="mc-settings-row">
             <div class="mc-icon">✨</div>
             <label class="mc-toggle-wrapper">
-              <input type="checkbox" id="toggle-creative" class="mc-setting-input" disabled onchange="toggleSetting('creative')">
+              <input type="checkbox" id="toggle-creative" class="mc-setting-input" onchange="toggleSetting('creative')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">모드 변경</span>
             </label>

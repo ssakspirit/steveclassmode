@@ -261,7 +261,22 @@ async function startServer() {
   function handleMinecraftEvent(event: WsEvent) {
     logEvent(event);
 
+    const messagePurpose = event.header?.messagePurpose;
     const eventName = event.body?.eventName || event.header?.eventName;
+
+    // commandResponse: 명령 응답에서 발신자 이름 추출 (호스트 감지용)
+    if (messagePurpose === 'commandResponse') {
+      // 응답 body에 명령 실행자가 포함되어 있는 경우가 있음
+      const senderName: string | undefined =
+        event.body?.sender ||
+        event.body?.origin?.name ||
+        event.body?.properties?.Sender;
+      if (senderName && !hostPlayerName) {
+        console.log(`🔍 [commandResponse] 명령 실행자 감지: ${senderName}`);
+        ensurePlayerExists(senderName);
+      }
+      return;
+    }
 
     switch (eventName) {
       case 'PlayerJoin':
@@ -409,21 +424,36 @@ async function startServer() {
   function subscribeToEvents() {
     if (!minecraftConnection) return;
 
-    // 클래스룸 모드처럼 이벤트 구독 요청
-    const subscribeMessage: any = {
-      header: {
-        requestId: uuidv4(),
-        messagePurpose: 'subscribe',
-        version: 1,
-        messageType: 'commandRequest'
-      },
-      body: {
-        eventName: 'PlayerTravelled'
-      }
+    // PlayerTravelled 구독 (위치 체사)
+    const subscribeTravel: any = {
+      header: { requestId: uuidv4(), messagePurpose: 'subscribe', version: 1, messageType: 'commandRequest' },
+      body: { eventName: 'PlayerTravelled' }
+    };
+
+    // PlayerJoin 구독 (진입 감지)
+    const subscribeJoin: any = {
+      header: { requestId: uuidv4(), messagePurpose: 'subscribe', version: 1, messageType: 'commandRequest' },
+      body: { eventName: 'PlayerJoin' }
     };
 
     console.log('📬 이벤트 구독 요청 전송...');
-    minecraftConnection.send(JSON.stringify(subscribeMessage));
+    minecraftConnection.send(JSON.stringify(subscribeTravel));
+    minecraftConnection.send(JSON.stringify(subscribeJoin));
+
+    // 이미 접속한 플레이어 감지를 위해 1.5초 후 /list 명령 전송
+    // Minecraft WebSocket은 명령을 보낸 플레이어의 이름을 응답에 담아 돌려보냄
+    setTimeout(() => {
+      if (minecraftConnection && minecraftConnection.readyState === WebSocket.OPEN) {
+        console.log('🔍 이미 접속 중인 플레이어 확인을 위한 /tellraw @s 전송');
+        // /tellraw @s 를 이용해 명령자(@s = 방장) 이름을 콘솔에 반영시킴
+        // PlayerTravelled 이벤트도 잠시 후 일어나므로 그걸로도 감지 가능
+        const pingCmd: any = {
+          header: { requestId: uuidv4(), messagePurpose: 'commandRequest', version: 1, messageType: 'commandRequest' },
+          body: { version: 1, commandLine: '/tellraw @s {"rawtext":[{"text":"Classroom Mode connected!"}]}', origin: { type: 'player' } }
+        };
+        minecraftConnection.send(JSON.stringify(pingCmd));
+      }
+    }, 1500);
   }
 
   function sendCommand(commandLine: string): boolean {
