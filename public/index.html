@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steve Classroom Mode - 마인크래프트 에듀 학습보조 도구</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+
+    /* 상단 헤더 */
+    .header {
+      background: white;
+      border-radius: 10px;
+      padding: 15px 20px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 14px;
+    }
+
+    #btn-world-pause {
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      background: white;
+      transition: all 0.2s;
+    }
+    
+    #btn-world-pause:hover:not(:disabled) {
+      background: #f0f0f0;
+    }
+
+    #btn-world-pause:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ccc;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.connected {
+      background: #10b981;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 메인 컨텐츠 */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 300px;
+      gap: 10px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      color: #667eea;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    /* 플레이어 리스트 */
+    .players-panel {
+      grid-row: 1 / 2;
+      grid-column: 1 / 2;
+    }
+
+    .player-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .player-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+
+    .player-card:hover {
+      transform: translateX(5px);
+      background: #e9ecef;
+    }
+
+    .player-card.offline {
+      opacity: 0.5;
+    }
+
+    .player-info {
+      flex: 1;
+    }
+
+    .player-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .player-details {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .player-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .btn-action {
+      padding: 5px 10px;
+      font-size: 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-teleport {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-teleport:hover {
+      background: #2563eb;
+    }
+
+    .btn-freeze {
+      background: #8b5cf6;
+      color: white;
+    }
+
+    .btn-freeze:hover {
+      background: #7c3aed;
+    }
+
+    .btn-mute {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-mute:hover {
+      background: #dc2626;
+    }
+
+    /* 이벤트 로그 */
+    .events-panel {
+      grid-row: 1 / 2;
+      grid-column: 2 / 3;
+    }
+
+    .event-log {
+      flex: 1;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .event-item {
+      margin-bottom: 8px;
+      padding: 5px;
+      border-left: 3px solid #3b82f6;
+      padding-left: 10px;
+    }
+
+    .event-item.join { border-left-color: #10b981; }
+    .event-item.leave { border-left-color: #ef4444; }
+    .event-item.chat { border-left-color: #f59e0b; }
+
+    .event-time {
+      color: #94a3b8;
+      margin-right: 10px;
+    }
+
+    /* 명령 콘솔 */
+    .console-panel {
+      grid-row: 2 / 3;
+      grid-column: 1 / 3;
+    }
+
+    .command-presets {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-preset {
+      padding: 8px 15px;
+      font-size: 13px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #f0f0f0;
+      color: #333;
+      transition: all 0.2s;
+    }
+
+    .btn-preset:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    .command-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .command-input {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .command-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .btn-send {
+      padding: 12px 30px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #667eea;
+      color: white;
+      transition: all 0.2s;
+    }
+
+    .btn-send:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-send:active {
+      transform: translateY(0);
+    }
+
+    .command-output {
+      flex: 1;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px;
+      color: #333;
+    }
+
+    .command-history-item {
+      margin-bottom: 5px;
+      color: #10b981;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 40px;
+      font-style: italic;
+    }
+
+    /* 스크롤바 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .badge-online {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-offline {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <h1>
+        🎮 Steve Classroom Mode
+      </h1>
+      <div class="status">
+        <button id="btn-world-pause" onclick="toggleWorldPause()" disabled title="아직 방장(선생님)이 인식되지 않았습니다.">
+          ⏸️ 학생 전체 행동 얼리기
+        </button>
+        <span id="connection-status">연결 대기 중...</span>
+        <div class="status-indicator" id="status-dot"></div>
+        <span id="player-count">학생: 0명</span>
+      </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content">
+      <!-- 플레이어 리스트 -->
+      <div class="panel players-panel">
+        <h2>👥 학생 목록</h2>
+        <div class="player-list" id="player-list">
+          <div class="empty-state">마인크래프트에서 연결을 기다리는 중...</div>
+        </div>
+      </div>
+
+      <!-- 이벤트 로그 -->
+      <div class="panel events-panel">
+        <h2>📋 실시간 이벤트 로그</h2>
+        <div class="event-log" id="event-log">
+          <div style="color: #94a3b8;">시스템 대기 중...</div>
+        </div>
+      </div>
+
+      <!-- 명령 콘솔 -->
+      <div class="panel console-panel">
+        <h2>⚡ 명령 콘솔</h2>
+        <div class="command-presets">
+          <button class="btn-preset" onclick="sendPreset('/time set day')">☀️ 낮으로</button>
+          <button class="btn-preset" onclick="sendPreset('/weather clear')">🌤️ 날씨 맑게</button>
+          <button class="btn-preset" onclick="sendPreset('/tp @a 0 100 0')">📍 모두 모으기</button>
+          <button class="btn-preset" onclick="sendPreset('/gamemode creative @a')">✨ 크리에이티브</button>
+          <button class="btn-preset" onclick="sendPreset('/gamemode survival @a')">⚔️ 서바이벌</button>
+          <button class="btn-preset" onclick="sendPreset('/clear @a')">🧹 인벤토리 비우기</button>
+        </div>
+        <div class="command-input-group">
+          <input type="text" class="command-input" id="command-input"
+                 placeholder="/명령어를 입력하세요..."
+                 onkeypress="if(event.key==='Enter') sendCommand()">
+          <button class="btn-send" onclick="sendCommand()">📤 전송</button>
+        </div>
+        <div class="command-output" id="command-output">
+          <div style="color: #999;">명령 기록이 여기에 표시됩니다...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="client.js"></script>
+</body>
+</html>

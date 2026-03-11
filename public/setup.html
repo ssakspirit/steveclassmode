@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steve Classroom Mode - 연결 대기 중...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .container {
+      background: white;
+      color: #333;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      max-width: 600px;
+      width: 90%;
+    }
+    h1 { color: #667eea; margin-bottom: 20px; font-size: 28px; }
+    p { margin-bottom: 20px; font-size: 16px; color: #555; line-height: 1.5; }
+    
+    .command-box {
+      background: #f4f6f9;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 24px;
+      font-weight: bold;
+      color: #e53e3e;
+      margin-bottom: 20px;
+      border: 2px dashed #cbd5e0;
+      word-break: break-all;
+    }
+    
+    .btn-copy {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-copy:hover { background: #059669; }
+    .btn-copy:active { transform: scale(0.98); }
+    
+    .status {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #ccc;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 마인크래프트 연결 대기 중</h1>
+    <p>아래의 명령어를 마인크래프트의 채팅창에 붙여넣어 연결을 완료하세요.</p>
+    
+    <div class="command-box" id="command-text">
+      /connect 로딩 중...
+    </div>
+    
+    <button class="btn-copy" id="btn-copy">📋 명령어 자동 복사</button>
+    
+    <div class="status">
+      <div class="spinner"></div>
+      <span id="status-text">서버 정보를 가져오는 중입니다...</span>
+    </div>
+  </div>
+
+  <script src="setup.js"></script>
+</body>
+</html>

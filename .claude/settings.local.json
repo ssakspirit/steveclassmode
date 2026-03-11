@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run dev)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /F /PID 41188)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 41188 -Force\")",
+      "Bash(npm start)",
+      "Bash(start http://localhost:3001)",
+      "Bash(powershell -Command \"Stop-Process -Id 31328 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 38880 -Force\")",
+      "Bash(tasklist:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 11596 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 6100 -Force\")",
+      "Bash(powershell -Command \"Get-Process -Id 14048 | Stop-Process -Force\")"
+    ]
+  }
+}

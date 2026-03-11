@@ -1,0 +1,25 @@
+{
+  "name": "steve-classroom-mode",
+  "version": "1.0.0",
+  "description": "Minecraft Education Edition WebSocket 학습보조 도구 (클래스룸 모드 재현)",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/server.js",
+    "dev": "npx tsc && node dist/server.js",
+    "watch": "npx tsc -w"
+  },
+  "keywords": ["minecraft", "education", "websocket", "classroom"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/ws": "^8.5.13",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.7.3"
+  }
+}
