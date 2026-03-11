@@ -1,12 +1,11 @@
 /**
- * Steve Classroom Mode - 웹 클라이언트
+ * Steve Classroom Mode - 웹 클라이언트 (Minimalist Theme)
  */
 
 // ==================== 전역 상태 ====================
 
 let ws = null;
 let players = new Map();
-let commandHistory = [];
 let reconnectAttempts = 0;
 let hostPlayerName = null;
 let isWorldPaused = false;
@@ -27,7 +26,6 @@ async function connect() {
       console.log('✅ WebSocket 연결 성공!');
       reconnectAttempts = 0;
       updateConnectionStatus(true);
-      addEventLog('system', '🌐 대시보드가 서버에 연결되었습니다. 마인크래프트 연결을 기다리는 중...');
     };
 
     ws.onmessage = (event) => {
@@ -42,7 +40,6 @@ async function connect() {
     ws.onclose = () => {
       console.log('❌ WebSocket 연결 종료');
       updateConnectionStatus(false);
-      addEventLog('system', '서버 연결이 끊어졌습니다.');
 
       // 재연결 시도
       if (reconnectAttempts < MAX_RECONNECT) {
@@ -56,11 +53,9 @@ async function connect() {
 
     ws.onerror = (error) => {
       console.error('WebSocket 오류:', error);
-      addEventLog('error', 'WebSocket 오류 발생');
     };
   } catch (error) {
     console.error('설정 로드 실패:', error);
-    addEventLog('error', '서버 설정 로드 실패. 서버 상태를 확인하세요.');
   }
 }
 
@@ -89,28 +84,20 @@ function handleServerMessage(message) {
         });
         updatePlayerList();
       }
-      if (message.data.events) {
-        message.data.events.forEach(event => {
-          addEventLogFromEvent(event);
-        });
-      }
       break;
 
     case 'event':
-      // 마인크래프트 이벤트
-      addEventLogFromEvent(message.data);
+      // 마인크래프트 이벤트 무시 (미니멀리즘 테마)
       break;
 
     case 'host_assigned':
       hostPlayerName = message.data.name;
       updateHostUI();
-      addEventLog('system', `👑 ${hostPlayerName} 님이 선생님(호스트)으로 식별되었습니다.`);
       break;
 
     case 'player_join':
       players.set(message.data.name, message.data);
       updatePlayerList();
-      addEventLog('join', `${message.data.name} 님이 입장했습니다.`);
       break;
 
     case 'player_leave':
@@ -119,7 +106,6 @@ function handleServerMessage(message) {
         player.isConnected = false;
         updatePlayerList();
       }
-      addEventLog('leave', `${message.data.name} 님이 퇴장했습니다.`);
       break;
 
     case 'player_move':
@@ -136,27 +122,16 @@ function handleServerMessage(message) {
       break;
 
     case 'player_chat':
-      addEventLog('chat', `${message.data.player}: ${message.data.message}`);
-      break;
-
     case 'command_response':
-      const outputDiv = document.getElementById('command-output');
-      if (outputDiv) {
-        const item = document.createElement('div');
-        item.style.color = message.data.statusCode === 0 ? '#10b981' : '#ef4444';
-        item.style.marginBottom = '4px';
-        item.textContent = `[응답] ${message.data.statusMessage}`;
-        outputDiv.appendChild(item);
-        outputDiv.scrollTop = outputDiv.scrollHeight;
-      }
+      // 로그 무시 (미니멀리즘 테마)
       break;
 
     case 'minecraft_connected':
-      addEventLog('system', '🎮 마인크래프트가 서버에 연결되었습니다!');
+      console.log('🎮 마인크래프트가 서버에 연결되었습니다!');
       break;
 
     case 'minecraft_disconnected':
-      addEventLog('system', '⚠️ 마인크래프트 연결이 끊어졌습니다.');
+      console.log('⚠️ 마인크래프트 연결이 끊어졌습니다.');
       players.forEach(p => p.isConnected = false);
       updatePlayerList();
       break;
@@ -166,12 +141,6 @@ function handleServerMessage(message) {
   }
 }
 
-function addEventLogFromEvent(event) {
-  const eventName = event.body?.eventName || event.header?.messageType || 'Unknown';
-  const eventData = JSON.stringify(event.body || {}, null, 2);
-  addEventLog('event', `${eventName}: ${eventData}`);
-}
-
 // ==================== UI 업데이트 ====================
 
 function updateConnectionStatus(connected) {
@@ -179,10 +148,12 @@ function updateConnectionStatus(connected) {
   const statusDot = document.getElementById('status-dot');
 
   if (connected) {
-    statusText.textContent = '🟢 서버 연결됨';
+    statusText.textContent = '연결됨';
+    statusText.style.color = '#55ff55';
     statusDot.classList.add('connected');
   } else {
-    statusText.textContent = '🔴 연결 끊김';
+    statusText.textContent = '연결 끊김';
+    statusText.style.color = '#ff5555';
     statusDot.classList.remove('connected');
   }
 }
@@ -206,34 +177,24 @@ function updatePlayerList() {
     card.className = `player-card ${player.isConnected ? '' : 'offline'}`;
 
     const position = player.position
-      ? `📍 X:${Math.round(player.position.x)} Y:${Math.round(player.position.y)} Z:${Math.round(player.position.z)}`
-      : '위치 정보 없음';
+      ? `X:${Math.round(player.position.x)} Y:${Math.round(player.position.y)} Z:${Math.round(player.position.z)}`
+      : '위치 모름';
 
     const dimension = player.dimension || '알 수 없음';
     const status = player.isConnected ? 'online' : 'offline';
 
+    // 불필요한 액션 버튼 제거
     card.innerHTML = `
       <div class="player-info">
         <div class="player-name">
           ${name === hostPlayerName ? '👑 ' : ''}${name}
-          <span class="badge badge-${status}">${player.isConnected ? '온라인' : '오프라인'}</span>
-          ${name === hostPlayerName ? '<span class="badge" style="background: #fbbf24; color: #78350f;">선생님</span>' : ''}
+          <span class="badge ${name === hostPlayerName ? 'badge-host' : 'badge-' + status}">
+            ${name === hostPlayerName ? '선생님' : (player.isConnected ? '접속 중' : '오프라인')}
+          </span>
         </div>
         <div class="player-details">
-          ${position}<br>
-          🌍 차원: ${dimension}
+          📍 ${position} | 🌍 차원: ${dimension}
         </div>
-      </div>
-      <div class="player-actions">
-        <button class="btn-action btn-teleport" onclick="teleportPlayer('${name}')" ${!player.isConnected ? 'disabled' : ''}>
-          📍 TP
-        </button>
-        <button class="btn-action btn-freeze" onclick="freezePlayer('${name}')" ${!player.isConnected ? 'disabled' : ''}>
-          ❄️ Freeze
-        </button>
-        <button class="btn-action btn-mute" onclick="mutePlayer('${name}')" ${!player.isConnected ? 'disabled' : ''}>
-          🔇 Mute
-        </button>
       </div>
     `;
 
@@ -241,163 +202,168 @@ function updatePlayerList() {
   });
 }
 
-function addEventLog(type, message) {
-  const eventLog = document.getElementById('event-log');
-  const eventItem = document.createElement('div');
-  eventItem.className = `event-item ${type}`;
-
-  const timestamp = new Date().toLocaleTimeString('ko-KR');
-  eventItem.innerHTML = `
-    <span class="event-time">[${timestamp}]</span>
-    ${escapeHtml(message)}
-  `;
-
-  eventLog.appendChild(eventItem);
-  eventLog.scrollTop = eventLog.scrollHeight;
-
-  // 최대 100개 유지
-  while (eventLog.children.length > 100) {
-    eventLog.removeChild(eventLog.firstChild);
-  }
-}
-
-function addCommandHistory(command) {
-  const output = document.getElementById('command-output');
-  const item = document.createElement('div');
-  item.className = 'command-history-item';
-
-  const timestamp = new Date().toLocaleTimeString('ko-KR');
-  item.textContent = `[${timestamp}] > ${command}`;
-
-  output.appendChild(item);
-  output.scrollTop = output.scrollHeight;
-
-  commandHistory.push(command);
-}
-
 // ==================== 명령 전송 ====================
 
 function sendCommand(cmdStr) {
-  let command = cmdStr;
-  let inputElement = null;
-  
-  // 만약 인자로 넘어온 명령어가 없으면 입력창에서 가져옴
-  if (!command) {
-    inputElement = document.getElementById('command-input');
-    if (!inputElement) return;
-    command = inputElement.value.trim();
-  }
-
-  if (!command) return;
+  if (!cmdStr) return;
 
   // WebSocket으로 전송
   if (ws && ws.readyState === WebSocket.OPEN) {
     const payload = {
       type: 'command',
-      command: command
+      command: cmdStr
     };
     
-    // 디버깅을 위해 콘솔과 화면 로그에 정확한 페이로드 출력
     console.log('📤 [명령어 전송 시도]:', JSON.stringify(payload));
-    addEventLog('system', `📡 [서버로 전송]: ${command}`);
-
     ws.send(JSON.stringify(payload));
-
-    addCommandHistory(command);
-    if (inputElement) {
-      inputElement.value = '';
-    }
   } else {
-    alert('서버에 연결되지 않았습니다!');
+    console.warn('서버에 연결되지 않아 명령을 전송할 수 없습니다.');
   }
 }
 
-function sendPreset(command) {
-  const input = document.getElementById('command-input');
-  input.value = command;
-  sendCommand();
-}
-
-// ==================== 플레이어 액션 ====================
-
-function teleportPlayer(playerName) {
-  const command = `/tp "${playerName}" 0 100 0`;
-  sendPreset(command);
-  addEventLog('system', `${playerName}을(를) (0, 100, 0)으로 텔레포트합니다.`);
-}
-
-function freezePlayer(playerName) {
-  const command = `/ability "${playerName}" mayfly false`;
-  sendPreset(command);
-  addEventLog('system', `${playerName}을(를) 동결합니다.`);
-}
-
-function mutePlayer(playerName) {
-  const command = `/ability "${playerName}" mute true`;
-  sendPreset(command);
-  addEventLog('system', `${playerName}을(를) 음소거합니다.`);
-}
-
-// ==================== 월드 퍼즈 (학생 전체 얼리기) ====================
+// ==================== 주의 집중 (월드 퍼즈 토글) ====================
 
 function updateHostUI() {
-  const btn = document.getElementById('btn-world-pause');
-  if (btn) {
+  const inputs = document.querySelectorAll('.mc-setting-input');
+  
+  inputs.forEach(input => {
     if (hostPlayerName) {
-      btn.disabled = false;
-      btn.title = `호스트(${hostPlayerName})를 제외한 모든 학생을 제어합니다.`;
+      input.disabled = false;
+      input.closest('.mc-settings-row').title = `호스트(${hostPlayerName})를 제외한 모든 학생을 제어합니다.`;
     } else {
-      btn.disabled = true;
-      btn.title = '아직 방장(선생님)이 인식되지 않았습니다.';
+      input.disabled = true;
+      input.closest('.mc-settings-row').title = '아직 방장(선생님)이 인식되지 않았습니다.';
+      
+      // 글자색 어둡게
+      const textSpan = input.closest('.mc-settings-row').querySelector('.toggle-text');
+      if (textSpan) textSpan.style.color = '#888';
     }
+  });
+
+  // 기존 주의 집중 토글을 위한 텍스트 처리 백업 (필요 시)
+  const toggleText = document.getElementById('toggle-text-status');
+  if (toggleText && !hostPlayerName) {
+    toggleText.style.color = '#888';
   }
 }
 
 function toggleWorldPause() {
   if (!hostPlayerName) {
     alert('아직 선생님(호스트) 플레이어가 접속되지 않아 기능을 사용할 수 없습니다.');
+    const toggleInput = document.getElementById('toggle-world-pause');
+    toggleInput.checked = false; // 불법 조작 방지
     return;
   }
 
-  const btn = document.getElementById('btn-world-pause');
-  isWorldPaused = !isWorldPaused;
+  const toggleInput = document.getElementById('toggle-world-pause');
+  const toggleText = document.getElementById('toggle-text-status');
+  // 월드 변경 불가 스위치 연동용
+  const immutableInput = document.getElementById('toggle-immutable');
+  const immutableText = immutableInput ? immutableInput.closest('.mc-settings-row').querySelector('.toggle-text') : null;
+
+  isWorldPaused = toggleInput.checked;
 
   if (isWorldPaused) {
-    // 얼리기 (disabled): 선생님이 직접 확인한 문법으로 롤백!
+    // 주의 집중 켜기 (disabled = 얼리기)
     sendCommand(`/inputpermission set @a[name=!"${hostPlayerName}"] movement disabled`);
     sendCommand(`/inputpermission set @a[name=!"${hostPlayerName}"] camera disabled`);
-    
-    // 추가: 월드 전체 건축 금지 (Immutable World 켜기)
     sendCommand(`/immutableworld true`);
+    sendCommand(`/tellraw @a {"rawtext":[{"text":"§c[알림] 플레이를 잠시 중단합니다. 잠시 선생님께 집중해주세요."}]}`);
     
-    btn.innerHTML = '▶️ 학생 전체 행동 해제';
-    btn.style.background = '#e53e3e';
-    btn.style.color = '#fff';
-    addEventLog('system', `⏸️ ${hostPlayerName} 선생님을 제외한 모든 학생을 얼렸습니다.`);
+    // UI 업데이트
+    if (toggleText) toggleText.style.color = '#55ff55';
+    if (immutableInput) {
+      immutableInput.checked = true;
+      if (immutableText) immutableText.style.color = '#55ff55';
+    }
+    console.log(`⏸️ 주의 집중 켜짐 (${hostPlayerName} 제외) 및 월드 변경 불가 적용`);
   } else {
-    // 해제하기 (enabled)
+    // 주의 집중 끄기 (enabled = 해제)
     sendCommand(`/inputpermission set @a[name=!"${hostPlayerName}"] movement enabled`);
     sendCommand(`/inputpermission set @a[name=!"${hostPlayerName}"] camera enabled`);
-    
-    // 추가: 월드 전체 건축 허용 (Immutable World 끄기)
     sendCommand(`/immutableworld false`);
-    
-    // 추가: 마인크래프트 버그 보완 (inputpermission 해제 후 선생님의 비행 능력이 증발하는 현상 복구)
     sendCommand(`/ability "${hostPlayerName}" mayfly true`);
+    sendCommand(`/tellraw @a {"rawtext":[{"text":"§a[알림] 플레이가 재개되었습니다."}]}`);
     
-    btn.innerHTML = '⏸️ 학생 전체 행동 얼리기';
-    btn.style.background = '';
-    btn.style.color = '';
-    addEventLog('system', `▶️ 학생들의 행동 제한을 해제했습니다.`);
+    // UI 업데이트
+    if (toggleText) toggleText.style.color = '#fff';
+    if (immutableInput) {
+      immutableInput.checked = false;
+      if (immutableText) immutableText.style.color = '#fff';
+    }
+    console.log(`▶️ 주의 집중 꺼짐 및 월드 변경 불가 해제`);
   }
 }
 
-// ==================== 유틸리티 ====================
+// 7종 신규 클래스룸 설정 토글 핸들러
+function toggleSetting(type) {
+  if (!hostPlayerName) return;
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  const toggleInput = document.getElementById(`toggle-${type}`);
+  const isChecked = toggleInput.checked;
+  const toggleText = toggleInput.closest('.mc-settings-row').querySelector('.toggle-text');
+
+  // UI 글자색 변경 피드백
+  toggleText.style.color = isChecked ? '#55ff55' : '#fff';
+
+  switch (type) {
+    case 'tnt':
+      // TNT 금지 (켜지면 폭발 무시 false, 꺼지면 폭발 허용 true)
+      sendCommand(`/gamerule tntexplodes ${isChecked ? 'false' : 'true'}`);
+      console.log(`TNT 폭발: ${isChecked ? '금지됨' : '허용됨'}`);
+      break;
+
+    case 'mobs':
+      // 몹 금지 (켜지면 스폰 false 및 기존 몹 제거, 꺼지면 스폰 true)
+      sendCommand(`/gamerule domobspawning ${isChecked ? 'false' : 'true'}`);
+      if (isChecked) {
+        // 이미 소환되어 있는 플레이어를 제외한 모든 엔티티(몹, 아이템 등) 제거
+        sendCommand(`/kill @e[type=!player]`);
+        console.log(`기존 몹 제거 및 스폰 금지됨`);
+      } else {
+        console.log(`몹 스폰 허용됨`);
+      }
+      break;
+
+    case 'pvp':
+      // PvP 금지 (켜지면 PvP false, 꺼지면 PvP true)
+      sendCommand(`/gamerule pvp ${isChecked ? 'false' : 'true'}`);
+      console.log(`PvP: ${isChecked ? '금지됨' : '허용됨'}`);
+      break;
+
+    case 'weather':
+      // 낮과 날씨 맑음 항상 유지
+      if (isChecked) {
+        sendCommand(`/time set day`);
+        sendCommand(`/weather clear`);
+        sendCommand(`/gamerule dodaylightcycle false`);
+        sendCommand(`/gamerule doweathercycle false`);
+        console.log(`낮/날씨 강제 고정 켜짐`);
+      } else {
+        sendCommand(`/gamerule dodaylightcycle true`);
+        sendCommand(`/gamerule doweathercycle true`);
+        console.log(`낮/날씨 강제 고정 꺼짐`);
+      }
+      break;
+
+    case 'immutable':
+      // 월드 변경 불가 (블록 파괴/설치 불가)
+      sendCommand(`/immutableworld ${isChecked ? 'true' : 'false'}`);
+      console.log(`월드 변경 불가: ${isChecked}`);
+      break;
+
+    case 'flight':
+      // 비행 능력 (호스트를 제외한 학생들 비행 허용)
+      sendCommand(`/ability @a[name=!"${hostPlayerName}"] mayfly ${isChecked ? 'true' : 'false'}`);
+      console.log(`학생 비행 능력 부여: ${isChecked}`);
+      break;
+
+    case 'creative':
+      // 크리에이티브 전환 (호스트 제외 전체)
+      sendCommand(`/gamemode ${isChecked ? 'c' : 's'} @a[name=!"${hostPlayerName}"]`);
+      console.log(`전체 학생 크리에이티브 모드: ${isChecked}`);
+      break;
+  }
 }
 
 // ==================== 초기화 ====================
@@ -405,12 +371,4 @@ function escapeHtml(text) {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Steve Classroom Mode 클라이언트 시작');
   connect();
-
-  // Enter 키로 명령 전송
-  const input = document.getElementById('command-input');
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      sendCommand();
-    }
-  });
 });

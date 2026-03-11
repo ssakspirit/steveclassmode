@@ -3,11 +3,19 @@
   "version": "1.0.0",
   "description": "Minecraft Education Edition WebSocket 학습보조 도구 (클래스룸 모드 재현)",
   "main": "dist/server.js",
+  "bin": "dist/server.js",
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/server.js",
     "dev": "npx tsc && node dist/server.js",
-    "watch": "npx tsc -w"
+    "watch": "npx tsc -w",
+    "build:exe": "npx tsc && npx pkg . --targets node18-win-x64 --output steve-classroom-mode.exe"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "public/**/*"
+    ]
   },
   "keywords": ["minecraft", "education", "websocket", "classroom"],
   "author": "",

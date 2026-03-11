@@ -104,7 +104,8 @@ let hostPlayerName: string | null = null; // 방장 (선생님) 이름 저장용
 
 // ==================== 로그 파일 ====================
 
-const LOG_DIR = path.join(__dirname, '../logs');
+// pkg(실행 파일화) 환경을 위해 __dirname 대신 process.cwd() 사용
+const LOG_DIR = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
