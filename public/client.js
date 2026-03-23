@@ -448,6 +448,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==================== 자주 쓰는 명령어 ====================
 let currentEditCmdId = null;
 
+const defaultQuickCmds = {
+  1: { name: '전체 학생 텔레포트 (@s)', cmd: '/tp @a @s' },
+  2: { name: '시간 낮으로 (Day)', cmd: '/time set day' },
+  3: { name: '날씨 맑음 (Clear)', cmd: '/weather clear' },
+  4: { name: '전체 서바이벌 모드', cmd: '/gamemode s @a' },
+  5: { name: '전체 크리에이티브', cmd: '/gamemode c @a' },
+  6: { name: '학생 인벤토리 싹 비우기', cmd: '/clear @a' },
+  7: { name: '모든 몹 제거', cmd: '/kill @e[type=!player]' },
+  8: { name: '주목! (화면 타이틀)', cmd: '/title @a title §e[주목!]\n/title @a subtitle 하던 것을 멈추고 선생님을 보세요.' },
+  9: { name: '학생들 이동 제한 켜기', cmd: '/inputpermission set @a movement disabled' },
+  10: { name: '학생들 이동 제한 풀기', cmd: '/inputpermission set @a movement enabled' }
+};
+
 function getQuickCmd(id) {
   const data = localStorage.getItem(`quickCmd_${id}`);
   if (data) {
@@ -455,7 +468,7 @@ function getQuickCmd(id) {
       return JSON.parse(data);
     } catch(e) {}
   }
-  return { name: '', cmd: '' };
+  return defaultQuickCmds[id] || { name: '', cmd: '' };
 }
 
 function setQuickCmd(id, name, cmd) {
