@@ -420,7 +420,8 @@
       font-family: 'Silkscreen', sans-serif;
       font-size: 12px;
     }
-    .quick-cmd-modal-box input {
+    .quick-cmd-modal-box input,
+    .quick-cmd-modal-box textarea {
       width: 100%;
       box-sizing: border-box;
       margin-top: 4px;
@@ -430,6 +431,10 @@
       background: #fff;
       border: 2px inset #888;
       padding: 2px 4px;
+    }
+    .quick-cmd-modal-box textarea {
+      resize: vertical;
+      white-space: pre-wrap;
     }
     .quick-cmd-modal-btns {
       display: flex;
@@ -579,8 +584,8 @@
             <div style="margin-bottom:8px; font-size:13px;">명령어 편집</div>
             <div>버튼 이름</div>
             <input type="text" id="qcmd-name-input" placeholder="예) 전체 텔레포트">
-            <div>명령어 (예: /tp @a @s)</div>
-            <input type="text" id="qcmd-cmd-input" placeholder="예) /tp @a @s">
+            <div>명령어 (여러 줄 구분 가능, 예: /tp @a @s)</div>
+            <textarea id="qcmd-cmd-input" placeholder="줄바꿈으로 여러 명령어를 입력하세요" rows="4"></textarea>
             <div class="quick-cmd-modal-btns">
               <button onclick="saveQuickCmd()">Save</button>
               <button onclick="closeQuickCmdModal()">Cancel</button>
