@@ -12,7 +12,7 @@ window.onload = async () => {
         commandString = `/connect localhost:${config.wsPort}`;
 
         commandText.textContent = commandString;
-        statusText.textContent = '마인크래프트 접속 후 채팅창에 명령어를 붙여넣으세요...';
+        statusText.textContent = '';
 
         // 자동 복사 시도
         try {
