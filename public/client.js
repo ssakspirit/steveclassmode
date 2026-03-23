@@ -120,6 +120,11 @@ function handleServerMessage(message) {
       break;
 
     case 'player_chat':
+      if (message.data) {
+        addChatMessage(message.data.player, message.data.message);
+      }
+      break;
+
     case 'command_response':
       break;
 
@@ -164,9 +169,8 @@ function updatePlayerList() {
   const playerList = document.getElementById('player-list');
   const playerCount = document.getElementById('player-count');
 
-  // 학생 수 집계 (온라인이면서 현재 방장이 아닌 사람만 카운트)
   const onlineStudents = Array.from(players.values()).filter(p => p.isConnected && p.name !== hostPlayerName);
-  playerCount.textContent = `학생: ${onlineStudents.length}명`;
+  if (playerCount) playerCount.textContent = `학생: ${onlineStudents.length}명`;
 
   if (players.size === 0) {
     playerList.innerHTML = '<div class="empty-state">학생이 없습니다.</div>';
@@ -174,37 +178,51 @@ function updatePlayerList() {
   }
 
   playerList.innerHTML = '';
-  players.forEach((player, name) => {
-    const card = document.createElement('div');
-    card.className = `player-card ${player.isConnected ? '' : 'offline'}`;
+  Array.from(players.entries())
+    .filter(([, player]) => player.isConnected)   // 퇴장한 플레이어 제외
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([name, player]) => {
+      const item = document.createElement('div');
+      item.className = 'player-card';
+      item.innerHTML = `<div class="player-name">${name === hostPlayerName ? '👩‍🏫 ' : ''}${name}</div>`;
 
-    const position = player.position
-      ? `X:${Math.round(player.position.x)} Y:${Math.round(player.position.y)} Z:${Math.round(player.position.z)}`
-      : '위치 모름';
+      item.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showPlayerContextMenu(e.clientX, e.clientY, name);
+      });
 
-    const dimension = player.dimension || '알 수 없음';
-    const status = player.isConnected ? 'online' : 'offline';
-
-    // 불필요한 액션 버튼 제거
-    card.innerHTML = `
-      <div class="player-info">
-        <div class="player-name">
-          ${name === hostPlayerName ? '👑 ' : ''}${name}
-          <span class="badge ${name === hostPlayerName ? 'badge-host' : 'badge-' + status}">
-            ${name === hostPlayerName ? '선생님' : (player.isConnected ? '접속 중' : '오프라인')}
-          </span>
-        </div>
-        <div class="player-details">
-          📍 ${position} | 🌍 차원: ${dimension}
-        </div>
-      </div>
-    `;
-
-    playerList.appendChild(card);
-  });
+      playerList.appendChild(item);
+    });
 }
 
 // ==================== 명령 전송 ====================
+
+// 채팅로그에 메시지 추가
+function addChatMessage(playerName, message) {
+  const log = document.getElementById('chat-log');
+  if (!log) return;
+
+  const line = document.createElement('div');
+  const isHost = playerName === hostPlayerName || playerName === '교사';
+  const color = isHost ? '#ffff55' : (playerName ? '#55ffff' : '#aaa');
+  // < > 를 HTML 엔티티로 이스케이프 → 브라우저가 태그로 오인하지 않음
+  const prefix = playerName ? `&lt;${playerName}&gt; ` : '';
+  line.innerHTML = `<span style="color:${color}">${prefix}${message}</span>`;
+  log.appendChild(line);
+
+  log.scrollTop = log.scrollHeight;
+}
+
+// 웹에서 마인크래프트로 메시지/커맨드 전송
+function sendChat(text) {
+  if (!text || !text.trim()) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    console.warn('서버에 연결되지 않아 전송 불가');
+    return;
+  }
+  ws.send(JSON.stringify({ type: 'say', text: text.trim() }));
+  // 마인크래프트가 PlayerMessage 이벤트로 돌려보내므로 로컬 표시 불필요 (중복 방지)
+}
 
 function sendCommand(cmdStr) {
   if (!cmdStr) return;
@@ -357,9 +375,69 @@ function toggleSetting(type) {
   }
 }
 
+// ==================== 우클릭 컨텍스트 메뉴 ====================
+
+let contextTargetPlayer = null;
+
+function showPlayerContextMenu(x, y, playerName) {
+  contextTargetPlayer = playerName;
+  const menu = document.getElementById('player-context-menu');
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
+  menu.classList.add('visible');
+}
+
+function hideContextMenu() {
+  const menu = document.getElementById('player-context-menu');
+  menu.classList.remove('visible');
+  contextTargetPlayer = null;
+}
+
 // ==================== 초기화 ====================
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Steve Classroom Mode 클라이언트 시작');
   connect();
+
+  // 컨텍스트 메뉴 버튼 동작
+  document.getElementById('ctx-tp').addEventListener('click', () => {
+    if (contextTargetPlayer) {
+      sendCommand(`/tp @s "${contextTargetPlayer}"`);
+      console.log(`📍 텔레포트 → ${contextTargetPlayer}`);
+    }
+    hideContextMenu();
+  });
+
+  document.getElementById('ctx-tphere').addEventListener('click', () => {
+    if (contextTargetPlayer) {
+      sendCommand(`/tp "${contextTargetPlayer}" @s`);
+      console.log(`↩️ 소환 ← ${contextTargetPlayer}`);
+    }
+    hideContextMenu();
+  });
+
+  // 다른 곳 클릭 시 메뉴 닫기
+  document.addEventListener('click', hideContextMenu);
+  document.addEventListener('contextmenu', (e) => {
+    // player-list 외부 우클릭 시 기본 동작 허용 + 메뉴 닫기
+    if (!e.target.closest('#player-list')) {
+      hideContextMenu();
+    }
+  });
+
+  // ==================== 채팅 입력창 ====================
+  const chatInput = document.getElementById('chat-input');
+  const chatSend = document.getElementById('chat-send');
+
+  function submitChat() {
+    const text = chatInput.value;
+    if (!text.trim()) return;
+    sendChat(text);
+    chatInput.value = '';
+  }
+
+  chatSend.addEventListener('click', submitChat);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitChat();
+  });
 });

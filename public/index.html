@@ -280,6 +280,16 @@
       color: #888;
     }
 
+    /* 플레이어 카드 호버 하이라이트 */
+    .player-card {
+      cursor: default;
+      padding: 1px 2px;
+    }
+    .player-card:hover {
+      background-color: var(--win-title-bg); /* Windows 95 선택 색상 (#000080) */
+      color: #fff;
+    }
+
     /* 스크롤바 */
     ::-webkit-scrollbar {
       width: 16px;
@@ -293,6 +303,35 @@
       border-left: 2px solid var(--win-border-light);
       border-right: 2px solid var(--win-border-dark);
       border-bottom: 2px solid var(--win-border-dark);
+    }
+    /* 우클릭 컨텍스트 메뉴 */
+    .context-menu {
+      display: none;
+      position: fixed;
+      background: var(--win-bg);
+      border-top: 2px solid var(--win-border-light);
+      border-left: 2px solid var(--win-border-light);
+      border-right: 2px solid var(--win-border-darker);
+      border-bottom: 2px solid var(--win-border-darker);
+      z-index: 9999;
+      min-width: 160px;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    }
+    .context-menu.visible { display: block; }
+    .context-menu-item {
+      padding: 4px 20px 4px 8px;
+      font-size: 13px;
+      cursor: default;
+      white-space: nowrap;
+    }
+    .context-menu-item:hover {
+      background: var(--win-title-bg);
+      color: #fff;
+    }
+    .context-menu-sep {
+      height: 1px;
+      background: var(--win-border-dark);
+      margin: 2px 0;
     }
   </style>
 </head>
@@ -313,17 +352,10 @@
     <!-- 윈도우 컨텐츠 -->
     <div class="window-content">
       
-      <!-- 상단 접속 상태 -->
-      <div class="app-header">
-        <div class="header-panel inset-border" style="flex: 2; color: #fff; background: #9bbbeb; text-shadow: 1px 1px 0 #000;">
-          Steve Classroom Mode
-        </div>
-        <div class="header-panel inset-border" style="flex: 1; font-family: 'VT323', monospace; font-size: 18px;" id="connection-status">
-          대기 중
-        </div>
-        <div class="header-panel inset-border" style="width: 40px; justify-content: center;">
-          <div style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid #000; background: #888;" id="status-dot"></div>
-        </div>
+      <!-- 상단 접속 상태 (숨김 - 요소는 유지, JS에서 참조) -->
+      <div style="display:none;">
+        <div id="connection-status"></div>
+        <div id="status-dot"></div>
       </div>
 
       <!-- 메인 2단 화면 -->
@@ -427,7 +459,7 @@
         <!-- 우측 패널: 학생 리스트 창 -->
         <div class="right-panel">
           <div class="list-header">
-            Spillerliste (학생 목록)
+            학생 목록
           </div>
           
           <!-- 검은색 리스트 뷰 -->
@@ -435,21 +467,55 @@
             <div style="color: #888;">마인크래프트 연결 대기 중...</div>
           </div>
           
-          <div class="list-header" style="margin-top: 5px;">
-            상태 기록 (학생 수: <span id="player-count">0</span>명)
+          <div class="list-header" style="margin-top: 5px;" id="chat-header">
+            채팅
           </div>
-          <div class="black-screen" style="height: 100px; flex: none;">
-            <!-- 삭제 원하셨던 채팅/로그창 대신 학생수 및 서버 구동 안내 메시지 고정칸으로 활용 -->
-            <div style="color: #888; font-size: 16px;">
-              [System] Classroom Mode initialized.<br>
-              [System] Waiting for connection...
-            </div>
+          <div class="black-screen" style="height: 100px; flex: none; overflow-y: auto;" id="chat-log">
+            <div style="color: #888; font-size: 16px;">[System] Classroom Mode initialized.</div>
+          </div>
+          <!-- 채팅 입력 영역 -->
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="메시지 또는 /커맨드 입력..."
+              style="
+                flex: 1;
+                background: #000;
+                color: #fff;
+                border: 2px solid #555;
+                font-family: 'VT323', monospace;
+                font-size: 16px;
+                padding: 2px 6px;
+                outline: none;
+              "
+            >
+            <button
+              id="chat-send"
+              style="
+                background: var(--win-bg);
+                border-top: 2px solid var(--win-border-light);
+                border-left: 2px solid var(--win-border-light);
+                border-right: 2px solid var(--win-border-darker);
+                border-bottom: 2px solid var(--win-border-darker);
+                font-size: 12px;
+                padding: 2px 8px;
+                cursor: pointer;
+              "
+            >Send</button>
           </div>
         </div>
 
       </div>
 
     </div>
+  </div>
+
+  <!-- 우클릭 컨텍스트 메뉴 -->
+  <div class="context-menu" id="player-context-menu">
+    <div class="context-menu-item" id="ctx-tp">📍 이 플레이어에게 텔레포트</div>
+    <div class="context-menu-sep"></div>
+    <div class="context-menu-item" id="ctx-tphere">↩️ 내 위치로 소환</div>
   </div>
 
   <script src="client.js"></script>

@@ -205,6 +205,13 @@ async function startServer() {
           // 웹 클라이언트 메시지
           if (message.type === 'command' && minecraftConnection) {
             sendCommand(message.command);
+          } else if (message.type === 'say' && minecraftConnection) {
+            // 일반 채팅: /로 시작하면 명령어, 아니면 /say로 전달
+            if (message.text.startsWith('/')) {
+              sendCommand(message.text);
+            } else {
+              sendCommand(`/say ${message.text}`);
+            }
           }
           return;
         }
@@ -264,16 +271,36 @@ async function startServer() {
     const messagePurpose = event.header?.messagePurpose;
     const eventName = event.body?.eventName || event.header?.eventName;
 
-    // commandResponse: 명령 응답에서 발신자 이름 추출 (호스트 감지용)
+    // commandResponse: 명령 응답에서 발신자/플레이어 이름 추출
     if (messagePurpose === 'commandResponse') {
-      // 응답 body에 명령 실행자가 포함되어 있는 경우가 있음
+      // /list 명령 응답: players 필드에 "sm01, lees, sangminj" 형태의 문자열로 접속자 목록이 들어옴
+      if (typeof event.body?.players === 'string' && event.body.players.trim()) {
+        const nameList = event.body.players.split(',').map((n: string) => n.trim()).filter(Boolean);
+        nameList.forEach((name: string) => {
+          ensurePlayerExists(name);
+        });
+      }
+      // 혹시 배열 형태로 오는 경우도 대비
+      else if (Array.isArray(event.body?.player) && event.body.player.length > 0) {
+        event.body.player.forEach((name: string) => {
+          ensurePlayerExists(name);
+        });
+      }
+
+      // /testfor @s 응답: victim 배열에 플레이어명
+      // /tellraw @s 응답: recipient 배열에 플레이어명
       const senderName: string | undefined =
         event.body?.sender ||
         event.body?.origin?.name ||
-        event.body?.properties?.Sender;
-      if (senderName && !hostPlayerName) {
-        console.log(`🔍 [commandResponse] 명령 실행자 감지: ${senderName}`);
-        ensurePlayerExists(senderName);
+        event.body?.properties?.Sender ||
+        (Array.isArray(event.body?.victim) && event.body.victim.length === 1 ? event.body.victim[0] : undefined) ||
+        (Array.isArray(event.body?.recipient) && event.body.recipient.length === 1 ? event.body.recipient[0] : undefined);
+
+      if (senderName && senderName !== 'Server' && senderName !== 'Oculus' && senderName !== 'External') {
+        if (!hostPlayerName || hostPlayerName === 'null') {
+          console.log(`🔍 [commandResponse] 호스트 플레이어 감지됨: ${senderName}`);
+          ensurePlayerExists(senderName);
+        }
       }
       return;
     }
@@ -289,11 +316,6 @@ async function startServer() {
         handlePlayerLeave(event);
         break;
 
-      case 'PlayerTeleport':
-      case 'PlayerTransform':
-      case 'PlayerTravelled':
-        handlePlayerMove(event);
-        break;
 
       case 'PlayerMessage':
       case 'ChatMessage':
@@ -314,8 +336,9 @@ async function startServer() {
 
     let player = players.get(playerName);
     if (!player) {
-      // 첫 연결인 경우 호스트(선생님)로 지정
-      if (!hostPlayerName) {
+      // 아직 호스트(선생님)가 지정되지 않았거나 비정상('null')일 때,
+      // 가장 처음 활동이 감지된 플레이어를 일단 호스트로 지정
+      if (!hostPlayerName || hostPlayerName === 'null') {
         hostPlayerName = playerName;
         console.log(`👑 [호스트 지정] ${playerName} 님이 선생님(호스트)으로 설정되었습니다.`);
         broadcastToWebClients({
@@ -405,17 +428,39 @@ async function startServer() {
   }
 
   function handlePlayerChat(event: WsEvent) {
-    const rawPlayer: any = event.body.player;
-    const playerName = (typeof rawPlayer === 'object' ? rawPlayer.name : rawPlayer) || event.body.properties?.Sender;
-    const message = event.body.message || event.body.properties?.Message;
+    const rawPlayer: any = event.body?.player;
+    const msgType: string = event.body?.type || event.body?.properties?.MessageType || 'chat';
+    const rawMessage: string = event.body?.message || event.body?.properties?.Message || '';
 
-    if (playerName) ensurePlayerExists(playerName);
+    let playerName: string | undefined;
+    let displayMessage: string = rawMessage;
 
-    console.log(`💬 [채팅] ${playerName}: ${message}`);
+    if (msgType === 'say') {
+      // /say 커맨드: message = "[교사] 내용" 형태 → 브래킷 접두사 제거 후 호스트 이름 사용
+      const bracketEnd = rawMessage.indexOf('] ');
+      displayMessage = bracketEnd !== -1 ? rawMessage.substring(bracketEnd + 2) : rawMessage;
+      playerName = '교사'; // 클래스룸 채팅창에서 보낸 메시지는 항상 <교사>로 표시
+    } else {
+      // 일반 채팅: sender 필드에 발신자 이름이 있음
+      playerName =
+        (rawPlayer && typeof rawPlayer === 'object' ? rawPlayer.name : rawPlayer) ||
+        event.body?.sender ||
+        event.body?.properties?.Sender ||
+        event.body?.origin?.name;
+    }
+
+    // 실제 플레이어만 목록에 등록 (가상 발신자 "교사" 등 제외)
+    if (playerName && players.has(playerName)) {
+      // 이미 알고 있는 플레이어면 그대로 유지
+    } else if (playerName && msgType !== 'say') {
+      ensurePlayerExists(playerName);
+    }
+
+    console.log(`💬 [채팅] ${playerName}: ${displayMessage}`);
 
     broadcastToWebClients({
       type: 'player_chat',
-      data: { player: playerName, message }
+      data: { player: playerName, message: displayMessage }
     });
   }
 
@@ -424,36 +469,58 @@ async function startServer() {
   function subscribeToEvents() {
     if (!minecraftConnection) return;
 
-    // PlayerTravelled 구독 (위치 체사)
-    const subscribeTravel: any = {
+    const makeSubscribe = (eventName: string): any => ({
       header: { requestId: uuidv4(), messagePurpose: 'subscribe', version: 1, messageType: 'commandRequest' },
-      body: { eventName: 'PlayerTravelled' }
-    };
+      body: { eventName }
+    });
 
-    // PlayerJoin 구독 (진입 감지)
-    const subscribeJoin: any = {
-      header: { requestId: uuidv4(), messagePurpose: 'subscribe', version: 1, messageType: 'commandRequest' },
-      body: { eventName: 'PlayerJoin' }
-    };
+    // 구독 메시지를 300ms 간격으로 순차 전송 (동시 전송 시 Minecraft가 일부 무시할 수 있음)
+    const events = ['PlayerJoin', 'PlayerLeave', 'PlayerMessage']; // PlayerTravelled 제거: 위치 UI 없음 + /list 폴링으로 대체
+    events.forEach((eventName, i) => {
+      setTimeout(() => {
+        if (minecraftConnection && minecraftConnection.readyState === WebSocket.OPEN) {
+          console.log(`📬 이벤트 구독: ${eventName}`);
+          minecraftConnection.send(JSON.stringify(makeSubscribe(eventName)));
+        }
+      }, i * 300);
+    });
 
-    console.log('📬 이벤트 구독 요청 전송...');
-    minecraftConnection.send(JSON.stringify(subscribeTravel));
-    minecraftConnection.send(JSON.stringify(subscribeJoin));
-
-    // 이미 접속한 플레이어 감지를 위해 1.5초 후 /list 명령 전송
-    // Minecraft WebSocket은 명령을 보낸 플레이어의 이름을 응답에 담아 돌려보냄
+    // 1.5초 후: /testfor @s → victim[0]으로 호스트 이름 감지 (플레이어에게 도안 안 보임)
     setTimeout(() => {
       if (minecraftConnection && minecraftConnection.readyState === WebSocket.OPEN) {
-        console.log('🔍 이미 접속 중인 플레이어 확인을 위한 /tellraw @s 전송');
-        // /tellraw @s 를 이용해 명령자(@s = 방장) 이름을 콘솔에 반영시킴
-        // PlayerTravelled 이벤트도 잠시 후 일어나므로 그걸로도 감지 가능
-        const pingCmd: any = {
+        console.log('🔍 [1/2] 호스트 감지 위한 /testfor @s 전송');
+        const testCmd: any = {
           header: { requestId: uuidv4(), messagePurpose: 'commandRequest', version: 1, messageType: 'commandRequest' },
-          body: { version: 1, commandLine: '/tellraw @s {"rawtext":[{"text":"Classroom Mode connected!"}]}', origin: { type: 'player' } }
+          body: { version: 1, commandLine: '/testfor @s', origin: { type: 'player' } }
         };
-        minecraftConnection.send(JSON.stringify(pingCmd));
+        minecraftConnection.send(JSON.stringify(testCmd));
       }
     }, 1500);
+
+    // 2.5초 후: /list → 현재 접속자 전체 목록 초기 파악
+    setTimeout(() => {
+      if (minecraftConnection && minecraftConnection.readyState === WebSocket.OPEN) {
+        console.log('🔍 [2/2] 전체 접속자 파악 위한 /list 전송');
+        const listCmd: any = {
+          header: { requestId: uuidv4(), messagePurpose: 'commandRequest', version: 1, messageType: 'commandRequest' },
+          body: { version: 1, commandLine: '/list', origin: { type: 'player' } }
+        };
+        minecraftConnection.send(JSON.stringify(listCmd));
+      }
+    }, 2500);
+
+    // 5초마다 /list 자동 갱신: PlayerJoin/Leave 이벤트 누락 시 최대 5초 내 동기화
+    const listInterval = setInterval(() => {
+      if (!minecraftConnection || minecraftConnection.readyState !== WebSocket.OPEN) {
+        clearInterval(listInterval);
+        return;
+      }
+      const listCmd: any = {
+        header: { requestId: uuidv4(), messagePurpose: 'commandRequest', version: 1, messageType: 'commandRequest' },
+        body: { version: 1, commandLine: '/list', origin: { type: 'player' } }
+      };
+      minecraftConnection.send(JSON.stringify(listCmd));
+    }, 5000);
   }
 
   function sendCommand(commandLine: string): boolean {
