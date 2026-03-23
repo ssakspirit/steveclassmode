@@ -551,3 +551,61 @@ window.closeQuickCmdModal = function () {
   modal.classList.remove('visible');
   currentEditCmdId = null;
 };
+
+// ==================== 내보내기 / 불러오기 ====================
+
+window.exportQuickCmds = function() {
+  let content = '';
+  for (let i = 1; i <= 10; i++) {
+    const data = getQuickCmd(i);
+    // 기본 프리셋이나 비어있는 값도 포함해서 형식 유지
+    content += `[${i}]\n`;
+    content += `이름: ${data?.name || ''}\n`;
+    content += `명령어:\n${data?.cmd || ''}\n`;
+    if (i < 10) content += `\n`;
+  }
+
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'steve_quick_cmds.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+window.importQuickCmds = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    // 정규식을 사용해 [1], [2] .. [10] 기준으로 텍스트 분할
+    // 윈도우 CRLF 지원을 위해 \r? 추가
+    const blocks = text.split(/\[\d+\]\r?\n/);
+    
+    for (let i = 1; i <= 10; i++) {
+      if (i < blocks.length) {
+        const block = blocks[i];
+        if (!block) continue;
+        
+        const nameMatch = block.match(/이름:(.*)/);
+        const name = nameMatch ? nameMatch[1].trim() : '';
+        
+        const cmdSplit = block.split(/명령어:\s*\r?\n?/);
+        let cmd = cmdSplit.length > 1 ? cmdSplit[1].trim() : '';
+        
+        if (!name && !cmd) {
+          localStorage.removeItem(`quickCmd_${i}`);
+        } else {
+          setQuickCmd(i, name, cmd);
+        }
+      }
+    }
+    
+    initQuickCmds();
+    alert('✅ 자주 쓰는 명령어 10개를 성공적으로 불러왔습니다!');
+    event.target.value = ''; // 선택 초기화
+  };
+  reader.readAsText(file);
+};

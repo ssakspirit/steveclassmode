@@ -570,7 +570,14 @@
 
           <!-- 자주 쓰는 명령어 -->
           <div class="quick-cmd-section">
-            <div class="quick-cmd-label">⚡ 자주 쓰는 명령어</div>
+            <div class="quick-cmd-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>⚡ 자주 쓰는 명령어</span>
+              <div style="display:flex; gap:4px;">
+                <button id="qcmd-import-btn" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); cursor:pointer; font-size:11px; padding:2px 4px; color:#000; font-family:'Gulim', sans-serif;" onclick="document.getElementById('qcmd-import-input').click()">📂 열기</button>
+                <button id="qcmd-export-btn" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); cursor:pointer; font-size:11px; padding:2px 4px; color:#000; font-family:'Gulim', sans-serif;" onclick="exportQuickCmds()">💾 저장</button>
+                <input type="file" id="qcmd-import-input" accept=".txt" style="display:none;" onchange="importQuickCmds(event)">
+              </div>
+            </div>
             <div class="quick-cmd-btn"><button class="quick-cmd-run" id="qbtn-1" onclick="runQuickCmd(1)">(비어 있음)</button><button class="quick-cmd-edit" onclick="editQuickCmd(1)">✏️</button></div>
             <div class="quick-cmd-btn"><button class="quick-cmd-run" id="qbtn-2" onclick="runQuickCmd(2)">(비어 있음)</button><button class="quick-cmd-edit" onclick="editQuickCmd(2)">✏️</button></div>
             <div class="quick-cmd-btn"><button class="quick-cmd-run" id="qbtn-3" onclick="runQuickCmd(3)">(비어 있음)</button><button class="quick-cmd-edit" onclick="editQuickCmd(3)">✏️</button></div>
