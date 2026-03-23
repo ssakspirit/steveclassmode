@@ -189,6 +189,12 @@ function updatePlayerList() {
     .forEach(([name, player]) => {
       const item = document.createElement('div');
       item.className = 'player-card';
+      
+      if (player.isFrozen) {
+        item.style.backgroundColor = 'rgba(255, 0, 0, 0.4)';
+        item.style.color = '#fff';
+      }
+
       item.innerHTML = `<div class="player-name">${name === hostPlayerName ? '👩‍🏫 ' : ''}${name}</div>`;
 
       item.addEventListener('contextmenu', (e) => {
@@ -387,6 +393,17 @@ let contextTargetPlayer = null;
 function showPlayerContextMenu(x, y, playerName) {
   contextTargetPlayer = playerName;
   const menu = document.getElementById('player-context-menu');
+  
+  const freezeBtn = document.getElementById('ctx-freeze');
+  if (freezeBtn) {
+    const player = players.get(playerName);
+    if (player && player.isFrozen) {
+      freezeBtn.textContent = '▶️ 풀기 (이동 허용)';
+    } else {
+      freezeBtn.textContent = '🛑 정지 (이동 차단)';
+    }
+  }
+
   menu.style.left = `${x}px`;
   menu.style.top = `${y}px`;
   menu.classList.add('visible');
@@ -417,6 +434,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contextTargetPlayer) {
       sendCommand(`/tp "${contextTargetPlayer}" @s`);
       console.log(`↩️ 소환 ← ${contextTargetPlayer}`);
+    }
+    hideContextMenu();
+  });
+
+  document.getElementById('ctx-freeze').addEventListener('click', () => {
+    if (contextTargetPlayer) {
+      const player = players.get(contextTargetPlayer);
+      if (player) {
+        player.isFrozen = !player.isFrozen;
+        if (player.isFrozen) {
+          sendCommand(`/inputpermission set "${contextTargetPlayer}" movement disabled`);
+          sendCommand(`/inputpermission set "${contextTargetPlayer}" camera disabled`);
+          sendCommand(`/tellraw "${contextTargetPlayer}" {"rawtext":[{"text":"§c[알림] 선생님에 의해 행동이 정지되었습니다."}]}`);
+          console.log(`🛑 정지 → ${contextTargetPlayer}`);
+        } else {
+          sendCommand(`/inputpermission set "${contextTargetPlayer}" movement enabled`);
+          sendCommand(`/inputpermission set "${contextTargetPlayer}" camera enabled`);
+          sendCommand(`/tellraw "${contextTargetPlayer}" {"rawtext":[{"text":"§a[알림] 정지가 풀려 다시 이동할 수 있습니다."}]}`);
+          console.log(`▶️ 풀기 → ${contextTargetPlayer}`);
+        }
+        updatePlayerList();
+      }
     }
     hideContextMenu();
   });
