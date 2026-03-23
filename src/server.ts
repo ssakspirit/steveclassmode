@@ -631,6 +631,22 @@ async function startServer() {
       return;
     }
 
+    if (req.url === '/api/loopback-exempt' && req.method === 'POST') {
+      // 윈도우 관리자 권한 팝업을 띄우고 명령어 실행
+      const psCommand = `powershell -Command "Start-Process cmd -ArgumentList '/c CheckNetIsolation LoopbackExempt -a -n=Microsoft.MinecraftUWP_8wekyb3d8bbwe' -Verb RunAs"`;
+      exec(psCommand, (error) => {
+        if (error) {
+          console.error('Loopback exempt error:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: '권한 부여 실패 (취소됨)' }));
+        } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        }
+      });
+      return;
+    }
+
     // 정적 파일 제공
     const filePath = req.url === '/' ? '/setup.html' : (req.url || '/setup.html');
     const fullPath = path.join(__dirname, '../public', filePath);

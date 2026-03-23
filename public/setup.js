@@ -48,6 +48,24 @@ window.onload = async () => {
             alert('자동 복사를 지원하지 않는 환경입니다. 명령어를 직접 드래그하여 복사해주세요.');
         }
     };
+
+    const btnLoopback = document.getElementById('btn-loopback');
+    if (btnLoopback) {
+        btnLoopback.onclick = async () => {
+            if (!confirm('베드락 에디션에서 서버에 접속하기 위해 윈도우 네트워크 차단을 해제해야 합니다.\n(이 기능은 "관리자 권한" 팝업을 띄웁니다.)\n\n진행하시겠습니까?')) return;
+            try {
+                const res = await fetch('/api/loopback-exempt', { method: 'POST' });
+                const result = await res.json();
+                if (result.success) {
+                    alert('성공적으로 로컬 서버 접속 차단을 풀었습니다!\n이제 베드락 에디션에서 명령어를 입력해 보세요.');
+                } else {
+                    alert('오류 발생: ' + result.error);
+                }
+            } catch (e) {
+                alert('서버 통신 오류가 발생했습니다.');
+            }
+        };
+    }
 };
 
 function connectWebSocket(port) {

@@ -93,6 +93,21 @@
       margin-top: 38px;
       font-size: 19px;
       color: #000;
+      margin-bottom: 20px;
+    }
+    .btn-loopback {
+      background: transparent;
+      border: 2px solid var(--win-border-darker);
+      color: #000;
+      padding: 8px 15px;
+      font-family: 'Gulim', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 20px;
+      text-decoration: underline;
+    }
+    .btn-loopback:hover {
+      background: #e0e0e0;
     }
   </style>
 </head>
@@ -111,6 +126,10 @@
       
       <div class="status">
         <span id="status-text">서버 정보를 가져오는 중입니다...</span>
+      </div>
+      
+      <div>
+        <button class="btn-loopback" id="btn-loopback">베드락 에디션 접속 차단 풀기 (최초 1회)</button>
       </div>
     </div>
   </div>
