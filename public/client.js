@@ -285,6 +285,14 @@ function toggleWorldPause() {
     sendCommand(`/immutableworld true`);
     sendCommand(`/tellraw @a {"rawtext":[{"text":"§c[알림] 플레이를 잠시 중단합니다. 잠시 선생님께 집중해주세요."}]}`);
 
+    // 개별 학생 UI 상태 동기화 (모두 얼림)
+    players.forEach(player => {
+      if (player.name !== hostPlayerName && player.name !== '교사' && player.name !== 'Server') {
+        player.isFrozen = true;
+      }
+    });
+    updatePlayerList();
+
     // UI 업데이트
     if (toggleText) toggleText.style.color = '#55ff55';
     if (immutableInput) {
@@ -299,6 +307,12 @@ function toggleWorldPause() {
     sendCommand(`/immutableworld false`);
     sendCommand(`/ability "${hostPlayerName}" mayfly true`);
     sendCommand(`/tellraw @a {"rawtext":[{"text":"§a[알림] 플레이가 재개되었습니다."}]}`);
+
+    // 개별 학생 UI 상태 동기화 (모두 풀림)
+    players.forEach(player => {
+      player.isFrozen = false;
+    });
+    updatePlayerList();
 
     // UI 업데이트
     if (toggleText) toggleText.style.color = '#fff';
