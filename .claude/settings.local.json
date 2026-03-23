@@ -16,7 +16,11 @@
       "Bash(tasklist:*)",
       "Bash(powershell -Command \"Stop-Process -Id 11596 -Force\")",
       "Bash(powershell -Command \"Stop-Process -Id 6100 -Force\")",
-      "Bash(powershell -Command \"Get-Process -Id 14048 | Stop-Process -Force\")"
+      "Bash(powershell -Command \"Get-Process -Id 14048 | Stop-Process -Force\")",
+      "Bash(dir:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Name\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path public -Name\")",
+      "Bash(powershell:*)"
     ]
   }
 }
