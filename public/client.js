@@ -465,7 +465,12 @@ function getQuickCmd(id) {
   const data = localStorage.getItem(`quickCmd_${id}`);
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      // 빈 값으로 저장되어 있다면 기본 프리셋으로 덮어쓰기 반환
+      if (!parsed.name && !parsed.cmd) {
+        return defaultQuickCmds[id] || { name: '', cmd: '' };
+      }
+      return parsed;
     } catch(e) {}
   }
   return defaultQuickCmds[id] || { name: '', cmd: '' };
@@ -526,7 +531,12 @@ window.saveQuickCmd = function() {
   const name = document.getElementById('qcmd-name-input').value.trim();
   const cmd = document.getElementById('qcmd-cmd-input').value.trim();
   
-  setQuickCmd(currentEditCmdId, name, cmd);
+  if (!name && !cmd) {
+    localStorage.removeItem(`quickCmd_${currentEditCmdId}`);
+  } else {
+    setQuickCmd(currentEditCmdId, name, cmd);
+  }
+  
   updateQuickCmdButton(currentEditCmdId);
   closeQuickCmdModal();
 };
