@@ -240,6 +240,15 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
+      min-width: 0; /* flex 자식 축소 허용 */
+    }
+
+    /* 플레이어 목록: 2열 그리드 */
+    #player-list {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
+      gap: 0;
     }
 
     .list-header {
@@ -462,15 +471,15 @@
             학생 목록
           </div>
           
-          <!-- 검은색 리스트 뷰 -->
-          <div class="black-screen" id="player-list">
+          <!-- 플레이어 목록 (2열, 업퍼 절반) -->
+          <div class="black-screen" id="player-list" style="flex: 1; overflow-y: auto;">
             <div style="color: #888;">마인크래프트 연결 대기 중...</div>
           </div>
           
           <div class="list-header" style="margin-top: 5px;" id="chat-header">
             채팅
           </div>
-          <div class="black-screen" style="height: 100px; flex: none; overflow-y: auto;" id="chat-log">
+          <div class="black-screen" style="flex: 1; overflow-y: auto;" id="chat-log">
             <div style="color: #888; font-size: 16px;">[System] Classroom Mode initialized.</div>
           </div>
           <!-- 채팅 입력 영역 -->
