@@ -117,17 +117,21 @@ function logToFile(message: string) {
 }
 
 function logEvent(event: WsEvent) {
-  const eventName = event.body?.eventName || event.header?.eventName || event.header?.messageType || 'Unknown';
+  const eventName = event.body?.eventName || event.header?.eventName || event.header?.messagePurpose || event.header?.messageType || 'Unknown';
 
   eventLog.push(event);
   if (eventLog.length > MAX_LOG_SIZE) {
     eventLog.shift();
   }
 
-  logToFile(`EVENT: ${eventName} | ${JSON.stringify(event.body || {})}`);
+  // 필터링할 이벤트 (너무 자주 발생하거나 무의미한 스팸)
+  const isSpam = 
+    eventName === 'PlayerTravelled' || 
+    eventName === 'ChunkChanged' || 
+    (eventName === 'commandResponse' && event.body?.statusMessage && event.body.statusMessage.includes('온라인:'));
 
-  // 너무 자주 발생하는 이벤트는 콘솔 출력 생략 (다만 로그 파일에는 남김)
-  if (eventName !== 'PlayerTravelled') {
+  if (!isSpam) {
+    logToFile(`EVENT: ${eventName} | ${JSON.stringify(event.body || {})}`);
     console.log(`📥 [이벤트] ${eventName}:`, event.body || {});
   }
 }
