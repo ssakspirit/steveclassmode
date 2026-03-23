@@ -463,7 +463,7 @@ function setQuickCmd(id, name, cmd) {
 }
 
 function initQuickCmds() {
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 10; i++) {
     updateQuickCmdButton(i);
   }
 }
