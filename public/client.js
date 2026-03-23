@@ -76,11 +76,11 @@ function handleServerMessage(message) {
       // 이미 마인크래프트가 연결되어 있는 상태에서 대시보드에 접구
       isMinecraftConnected = message.data.connected;
       updateHostUI();
-      
+
       if (message.data.hostPlayerName) {
         hostPlayerName = message.data.hostPlayerName;
       }
-      
+
       if (message.data.players) {
         message.data.players.forEach(player => {
           players.set(player.name, player);
@@ -169,7 +169,12 @@ function updatePlayerList() {
   const playerList = document.getElementById('player-list');
   const playerCount = document.getElementById('player-count');
 
-  const onlineStudents = Array.from(players.values()).filter(p => p.isConnected && p.name !== hostPlayerName);
+  const onlineStudents = Array.from(players.values()).filter(p => 
+    p.isConnected && 
+    p.name !== hostPlayerName && 
+    p.name !== '교사' && 
+    p.name !== 'Server'
+  );
   if (playerCount) playerCount.textContent = `학생: ${onlineStudents.length}명`;
 
   if (players.size === 0) {
@@ -179,7 +184,7 @@ function updatePlayerList() {
 
   playerList.innerHTML = '';
   Array.from(players.entries())
-    .filter(([, player]) => player.isConnected)   // 퇴장한 플레이어 제외
+    .filter(([name, player]) => player.isConnected && name !== '교사' && name !== 'Server')   // 퇴장한 플레이어 및 가상 발신자 제외
     .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([name, player]) => {
       const item = document.createElement('div');
@@ -233,7 +238,7 @@ function sendCommand(cmdStr) {
       type: 'command',
       command: cmdStr
     };
-    
+
     console.log('📤 [명령어 전송 시도]:', JSON.stringify(payload));
     ws.send(JSON.stringify(payload));
   } else {
@@ -253,7 +258,7 @@ function updateHostUI() {
 
 function toggleWorldPause() {
   const toggleInput = document.getElementById('toggle-world-pause');
-  
+
   if (!isMinecraftConnected) {
     alert('마인크래프트와 연결되지 않았습니다. 메입니다. /connect localhost:3000 을 먼저 실행해주세요.');
     toggleInput.checked = !toggleInput.checked;
@@ -273,7 +278,7 @@ function toggleWorldPause() {
     sendCommand(`/inputpermission set @a[name=!"${hostPlayerName}"] camera disabled`);
     sendCommand(`/immutableworld true`);
     sendCommand(`/tellraw @a {"rawtext":[{"text":"§c[알림] 플레이를 잠시 중단합니다. 잠시 선생님께 집중해주세요."}]}`);
-    
+
     // UI 업데이트
     if (toggleText) toggleText.style.color = '#55ff55';
     if (immutableInput) {
@@ -288,7 +293,7 @@ function toggleWorldPause() {
     sendCommand(`/immutableworld false`);
     sendCommand(`/ability "${hostPlayerName}" mayfly true`);
     sendCommand(`/tellraw @a {"rawtext":[{"text":"§a[알림] 플레이가 재개되었습니다."}]}`);
-    
+
     // UI 업데이트
     if (toggleText) toggleText.style.color = '#fff';
     if (immutableInput) {
@@ -302,7 +307,7 @@ function toggleWorldPause() {
 // 7종 신규 클래스룸 설정 토글 핸들러
 function toggleSetting(type) {
   const toggleInput = document.getElementById(`toggle-${type}`);
-  
+
   if (!isMinecraftConnected) {
     alert('마인크래프트와 연결되지 않았습니다. /connect localhost:3000 을 먼저 실행해주세요.');
     toggleInput.checked = !toggleInput.checked;
@@ -454,9 +459,9 @@ const defaultQuickCmds = {
   3: { name: '날씨 맑음 (Clear)', cmd: '/weather clear' },
   4: { name: '전체 서바이벌 모드', cmd: '/gamemode s @a' },
   5: { name: '전체 크리에이티브', cmd: '/gamemode c @a' },
-  6: { name: '학생 인벤토리 싹 비우기', cmd: '/clear @a' },
+  6: { name: '인벤토리 싹 비우기', cmd: '/clear @a' },
   7: { name: '모든 몹 제거', cmd: '/kill @e[type=!player]' },
-  8: { name: '주목! (화면 타이틀)', cmd: '/title @a title §e[주목!]\n/title @a subtitle 하던 것을 멈추고 선생님을 보세요.' },
+  8: { name: '주목!', cmd: '/title @a title 주목! 선생님을 보세요.' },
   9: { name: '전체 학생 스폰 포인트 지정 (호스트 기준)', cmd: '/spawnpoint @a ~ ~ ~' },
   10: { name: '월드 스폰 포인트 지정 (호스트 기준)', cmd: '/setworldspawn ~ ~ ~' }
 };
@@ -471,7 +476,7 @@ function getQuickCmd(id) {
         return defaultQuickCmds[id] || { name: '', cmd: '' };
       }
       return parsed;
-    } catch(e) {}
+    } catch (e) { }
   }
   return defaultQuickCmds[id] || { name: '', cmd: '' };
 }
@@ -490,7 +495,7 @@ function updateQuickCmdButton(id) {
   const btn = document.getElementById(`qbtn-${id}`);
   if (!btn) return;
   const data = getQuickCmd(id);
-  
+
   if (data.name && data.cmd) {
     btn.textContent = data.name;
     btn.title = data.name;
@@ -502,7 +507,7 @@ function updateQuickCmdButton(id) {
   }
 }
 
-window.runQuickCmd = function(id) {
+window.runQuickCmd = function (id) {
   const data = getQuickCmd(id);
   if (data.cmd) {
     // 슬래시로 시작하면 샌드커맨드, 아니면 채팅 전송
@@ -516,7 +521,7 @@ window.runQuickCmd = function(id) {
   }
 };
 
-window.editQuickCmd = function(id) {
+window.editQuickCmd = function (id) {
   currentEditCmdId = id;
   const data = getQuickCmd(id);
   const modal = document.getElementById('quick-cmd-modal');
@@ -526,22 +531,22 @@ window.editQuickCmd = function(id) {
   document.getElementById('qcmd-name-input').focus();
 };
 
-window.saveQuickCmd = function() {
+window.saveQuickCmd = function () {
   if (currentEditCmdId === null) return;
   const name = document.getElementById('qcmd-name-input').value.trim();
   const cmd = document.getElementById('qcmd-cmd-input').value.trim();
-  
+
   if (!name && !cmd) {
     localStorage.removeItem(`quickCmd_${currentEditCmdId}`);
   } else {
     setQuickCmd(currentEditCmdId, name, cmd);
   }
-  
+
   updateQuickCmdButton(currentEditCmdId);
   closeQuickCmdModal();
 };
 
-window.closeQuickCmdModal = function() {
+window.closeQuickCmdModal = function () {
   const modal = document.getElementById('quick-cmd-modal');
   modal.classList.remove('visible');
   currentEditCmdId = null;
