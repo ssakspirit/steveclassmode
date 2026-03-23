@@ -488,7 +488,7 @@ function updateQuickCmdButton(id) {
   
   if (data.name && data.cmd) {
     btn.textContent = data.name;
-    btn.title = data.cmd;
+    btn.title = data.name;
     btn.disabled = false;
   } else {
     btn.textContent = '(비어 있음)';
