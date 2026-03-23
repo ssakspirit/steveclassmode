@@ -457,8 +457,8 @@ const defaultQuickCmds = {
   6: { name: '학생 인벤토리 싹 비우기', cmd: '/clear @a' },
   7: { name: '모든 몹 제거', cmd: '/kill @e[type=!player]' },
   8: { name: '주목! (화면 타이틀)', cmd: '/title @a title §e[주목!]\n/title @a subtitle 하던 것을 멈추고 선생님을 보세요.' },
-  9: { name: '학생들 이동 제한 켜기', cmd: '/inputpermission set @a movement disabled' },
-  10: { name: '학생들 이동 제한 풀기', cmd: '/inputpermission set @a movement enabled' }
+  9: { name: '전체 학생 스폰 포인트 지정 (호스트 기준)', cmd: '/spawnpoint @a ~ ~ ~' },
+  10: { name: '월드 스폰 포인트 지정 (호스트 기준)', cmd: '/setworldspawn ~ ~ ~' }
 };
 
 function getQuickCmd(id) {
