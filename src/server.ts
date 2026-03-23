@@ -427,6 +427,9 @@ async function startServer() {
     }
   }
 
+  let lastChatMessage = '';
+  let lastChatTime = 0;
+
   function handlePlayerChat(event: WsEvent) {
     const rawPlayer: any = event.body?.player;
     const msgType: string = event.body?.type || event.body?.properties?.MessageType || 'chat';
@@ -440,6 +443,18 @@ async function startServer() {
       const bracketEnd = rawMessage.indexOf('] ');
       displayMessage = bracketEnd !== -1 ? rawMessage.substring(bracketEnd + 2) : rawMessage;
       playerName = '교사'; // 클래스룸 채팅창에서 보낸 메시지는 항상 <교사>로 표시
+    } else if (rawMessage.startsWith('{"rawtext"')) {
+      // tellraw JSON 포맷 파싱 및 정리
+      try {
+        const parsed = JSON.parse(rawMessage);
+        if (Array.isArray(parsed.rawtext)) {
+          const textParts = parsed.rawtext.map((part: any) => part.text || '').join('');
+          displayMessage = textParts.replace(/§[0-9a-fk-or]/ig, ''); // 인게임 색상코드 제거
+        }
+        playerName = '시스템 알림';
+      } catch (e) {
+        displayMessage = rawMessage;
+      }
     } else {
       // 일반 채팅: sender 필드에 발신자 이름이 있음
       playerName =
@@ -449,18 +464,26 @@ async function startServer() {
         event.body?.origin?.name;
     }
 
-    // 실제 플레이어만 목록에 등록 (가상 발신자 "교사" 등 제외)
+    // ==================== 중복 메시지 방어 (500ms 쿨타임) ====================
+    const now = Date.now();
+    if (displayMessage === lastChatMessage && (now - lastChatTime) < 500) {
+      return; // 완전히 동일한 내용이 순식간에 중복 발생하면 첫 번째만 띄우고 무시
+    }
+    lastChatMessage = displayMessage;
+    lastChatTime = now;
+
+    // 실제 플레이어만 목록에 등록 (가상 발신자 "교사", "시스템 알림" 등 제외)
     if (playerName && players.has(playerName)) {
       // 이미 알고 있는 플레이어면 그대로 유지
-    } else if (playerName && msgType !== 'say') {
+    } else if (playerName && msgType !== 'say' && !rawMessage.startsWith('{"rawtext"')) {
       ensurePlayerExists(playerName);
     }
 
-    console.log(`💬 [채팅] ${playerName}: ${displayMessage}`);
+    console.log(`💬 [채팅] ${playerName || '알 수 없음'}: ${displayMessage}`);
 
     broadcastToWebClients({
       type: 'player_chat',
-      data: { player: playerName, message: displayMessage }
+      data: { player: playerName || '알 수 없음', message: displayMessage }
     });
   }
 
