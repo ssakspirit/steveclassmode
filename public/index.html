@@ -467,39 +467,37 @@
     <!-- 타이틀 바 -->
     <div class="title-bar">
       <span>SteveClassroom</span>
-      <button onclick="document.getElementById('about-modal').classList.add('visible')" style="background:transparent; border:none; color:#fff; font-size:16px; font-weight:bold; cursor:pointer; padding:0 4px; font-family:'Silkscreen',sans-serif; line-height:1;">?</button>
+      <button onclick="openAboutModal()" style="background:transparent; border:none; color:#fff; font-size:16px; font-weight:bold; cursor:pointer; padding:0 4px; font-family:'Silkscreen',sans-serif; line-height:1;">?</button>
     </div>
 
     <!-- About 모달 -->
-    <div id="about-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div id="about-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
       <div style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); padding:0; min-width:300px; font-family:'Silkscreen',sans-serif;">
         <div style="background:linear-gradient(90deg,#3d6b1e 0%,#5c9c2b 50%,#3d6b1e 100%); color:#fff; padding:3px 8px; font-size:14px; font-weight:bold; text-shadow:1px 1px 0 #2a4a12; display:flex; justify-content:space-between; align-items:center;">
           <span>SteveClassroom 정보</span>
-          <button onclick="document.getElementById('about-modal').classList.remove('visible')" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); color:#000; font-size:11px; width:18px; height:16px; cursor:pointer; font-family:'Silkscreen',sans-serif; font-weight:bold;">X</button>
+          <button onclick="document.getElementById('about-modal').style.display='none'" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); color:#000; font-size:11px; width:18px; height:16px; cursor:pointer; font-family:'Silkscreen',sans-serif; font-weight:bold;">X</button>
         </div>
         <div style="padding:20px 24px; display:flex; flex-direction:column; gap:10px; font-size:13px;">
           <div style="font-size:17px; font-weight:bold; color:#3d6b1e;">SteveClassroom</div>
           <div style="color:#555; font-size:12px; margin-top:-6px;">Minecraft Education 스마트 클래스룸 보조 도구</div>
           <hr style="border:none; border-top:1px solid #aaa; margin:0;">
-          <div><b>제작자</b>: 스티브코딩 (Steve Coding)</div>
-          <div><b>연락처</b>: <a href="mailto:ssakspirit@gmail.com" style="color:#3d6b1e;">ssakspirit@gmail.com</a></div>
+          <div><b>제작자</b>: Stevecoding</div>
+          <div><b>이메일</b>: <a href="mailto:ssakspirit@gmail.com" style="color:#3d6b1e;">ssakspirit@gmail.com</a></div>
+          <div><b>유튜브</b>: <a href="https://www.youtube.com/@stevecoding" target="_blank" style="color:#3d6b1e;">@stevecoding</a></div>
           <div><b>버전</b>: v1.0</div>
           <div style="text-align:right; margin-top:8px;">
-            <button onclick="document.getElementById('about-modal').classList.remove('visible')" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); padding:3px 20px; cursor:pointer; font-family:'Silkscreen',sans-serif; font-size:12px;">OK</button>
+            <button onclick="document.getElementById('about-modal').style.display='none'" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); padding:3px 20px; cursor:pointer; font-family:'Silkscreen',sans-serif; font-size:12px;">OK</button>
           </div>
         </div>
       </div>
     </div>
     <script>
-      // about 모달 display 토글 보조
-      const aboutModal = document.getElementById('about-modal');
-      if (aboutModal) {
-        aboutModal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('visible'); });
-        // visible 클래스 처리
-        const style = document.createElement('style');
-        style.textContent = '#about-modal { display:none; } #about-modal.visible { display:flex; }';
-        document.head.appendChild(style);
-      }
+      function openAboutModal() { document.getElementById('about-modal').style.display = 'flex'; }
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('about-modal').addEventListener('click', function(e) {
+          if (e.target === this) this.style.display = 'none';
+        });
+      });
     </script>
 
     <!-- 윈도우 컨텐츠 -->
