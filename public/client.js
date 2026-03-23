@@ -440,4 +440,86 @@ document.addEventListener('DOMContentLoaded', () => {
   chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitChat();
   });
+
+  // 자주 쓰는 명령어 초기화
+  initQuickCmds();
 });
+
+// ==================== 자주 쓰는 명령어 ====================
+let currentEditCmdId = null;
+
+function getQuickCmd(id) {
+  const data = localStorage.getItem(`quickCmd_${id}`);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch(e) {}
+  }
+  return { name: '', cmd: '' };
+}
+
+function setQuickCmd(id, name, cmd) {
+  localStorage.setItem(`quickCmd_${id}`, JSON.stringify({ name, cmd }));
+}
+
+function initQuickCmds() {
+  for (let i = 1; i <= 5; i++) {
+    updateQuickCmdButton(i);
+  }
+}
+
+function updateQuickCmdButton(id) {
+  const btn = document.getElementById(`qbtn-${id}`);
+  if (!btn) return;
+  const data = getQuickCmd(id);
+  
+  if (data.name && data.cmd) {
+    btn.textContent = data.name;
+    btn.title = data.cmd;
+    btn.disabled = false;
+  } else {
+    btn.textContent = '(비어 있음)';
+    btn.title = '우측 연필 아이콘을 눌러 설정하세요';
+    btn.disabled = true;
+  }
+}
+
+window.runQuickCmd = function(id) {
+  const data = getQuickCmd(id);
+  if (data.cmd) {
+    // 슬래시로 시작하면 샌드커맨드, 아니면 채팅 전송
+    if (data.cmd.startsWith('/')) {
+      sendCommand(data.cmd);
+      console.log(`⚡ 명령어 실행: ${data.cmd}`);
+    } else {
+      sendChat(data.cmd);
+      console.log(`⚡ 텍스트 전송: ${data.cmd}`);
+    }
+  }
+};
+
+window.editQuickCmd = function(id) {
+  currentEditCmdId = id;
+  const data = getQuickCmd(id);
+  const modal = document.getElementById('quick-cmd-modal');
+  document.getElementById('qcmd-name-input').value = data.name || '';
+  document.getElementById('qcmd-cmd-input').value = data.cmd || '';
+  modal.classList.add('visible');
+  document.getElementById('qcmd-name-input').focus();
+};
+
+window.saveQuickCmd = function() {
+  if (currentEditCmdId === null) return;
+  const name = document.getElementById('qcmd-name-input').value.trim();
+  const cmd = document.getElementById('qcmd-cmd-input').value.trim();
+  
+  setQuickCmd(currentEditCmdId, name, cmd);
+  updateQuickCmdButton(currentEditCmdId);
+  closeQuickCmdModal();
+};
+
+window.closeQuickCmdModal = function() {
+  const modal = document.getElementById('quick-cmd-modal');
+  modal.classList.remove('visible');
+  currentEditCmdId = null;
+};
