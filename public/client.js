@@ -95,6 +95,7 @@ function handleServerMessage(message) {
 
     case 'host_assigned':
       hostPlayerName = message.data.name;
+      updatePlayerList();
       break;
 
     case 'player_join':
@@ -131,6 +132,7 @@ function handleServerMessage(message) {
     case 'minecraft_connected':
       console.log('🎮 마인크래프트가 서버에 연결되었습니다!');
       isMinecraftConnected = true;
+      hostPlayerName = null; // 서버가 새 연결에서 호스트를 다시 감지함 (host_assigned로 전달)
       updateHostUI();
       break;
 
@@ -195,7 +197,11 @@ function updatePlayerList() {
         item.style.color = '#fff';
       }
 
-      item.innerHTML = `<div class="player-name">${name === hostPlayerName ? '👩‍🏫 ' : ''}${name}</div>`;
+      // 이름은 textContent로 넣어 HTML로 해석되지 않게 함 (XSS 방지)
+      const nameEl = document.createElement('div');
+      nameEl.className = 'player-name';
+      nameEl.textContent = `${name === hostPlayerName ? '👩‍🏫 ' : ''}${name}`;
+      item.appendChild(nameEl);
 
       item.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -216,9 +222,11 @@ function addChatMessage(playerName, message) {
   const line = document.createElement('div');
   const isHost = playerName === hostPlayerName || playerName === '교사';
   const color = isHost ? '#ffff55' : (playerName ? '#55ffff' : '#aaa');
-  // < > 를 HTML 엔티티로 이스케이프 → 브라우저가 태그로 오인하지 않음
-  const prefix = playerName ? `&lt;${playerName}&gt; ` : '';
-  line.innerHTML = `<span style="color:${color}">${prefix}${message}</span>`;
+  // 학생이 입력한 채팅은 반드시 textContent로 넣음 (innerHTML 사용 시 채팅으로 스크립트 실행 가능 = XSS)
+  const span = document.createElement('span');
+  span.style.color = color;
+  span.textContent = `${playerName ? `<${playerName}> ` : ''}${message}`;
+  line.appendChild(span);
   log.appendChild(line);
 
   log.scrollTop = log.scrollHeight;
@@ -262,6 +270,14 @@ function updateHostUI() {
   }
 }
 
+/** 호스트(선생님) 이름을 아직 모르면 안내 후 토글을 원래대로 되돌림 */
+function requireHost(toggleInput) {
+  if (hostPlayerName) return true;
+  alert('선생님(호스트) 캐릭터를 아직 확인하지 못했습니다.\n몇 초 뒤에 다시 시도해주세요.');
+  toggleInput.checked = !toggleInput.checked;
+  return false;
+}
+
 function toggleWorldPause() {
   const toggleInput = document.getElementById('toggle-world-pause');
 
@@ -270,6 +286,9 @@ function toggleWorldPause() {
     toggleInput.checked = !toggleInput.checked;
     return;
   }
+
+  // 호스트(선생님)를 모르는 상태에서 실행하면 @a[name=!"null"]이 되어 선생님까지 얼어붙음 → 차단
+  if (!requireHost(toggleInput)) return;
 
   const toggleText = document.getElementById('toggle-text-status');
   // 월드 변경 불가 스위치 연동용
@@ -333,6 +352,9 @@ function toggleSetting(type) {
     toggleInput.checked = !toggleInput.checked;
     return;
   }
+
+  // 호스트 제외 대상 명령(비행/모드 변경)은 호스트를 알아야만 실행
+  if ((type === 'flight' || type === 'creative') && !requireHost(toggleInput)) return;
 
   const isChecked = toggleInput.checked;
   const toggleText = toggleInput.closest('.mc-settings-row').querySelector('.toggle-text');
