@@ -563,14 +563,18 @@ function updateQuickCmdButton(id) {
 window.runQuickCmd = function (id) {
   const data = getQuickCmd(id);
   if (data.cmd) {
-    // 슬래시로 시작하면 샌드커맨드, 아니면 채팅 전송
-    if (data.cmd.startsWith('/')) {
-      sendCommand(data.cmd);
-      console.log(`⚡ 명령어 실행: ${data.cmd}`);
-    } else {
-      sendChat(data.cmd);
-      console.log(`⚡ 텍스트 전송: ${data.cmd}`);
-    }
+    const lines = data.cmd.split('\n').map(line => line.trim()).filter(line => line);
+    lines.forEach((line, index) => {
+      setTimeout(() => {
+        if (line.startsWith('/')) {
+          sendCommand(line);
+          console.log(`⚡ 명령어 실행 (${index + 1}/${lines.length}): ${line}`);
+        } else {
+          sendChat(line);
+          console.log(`⚡ 텍스트 전송 (${index + 1}/${lines.length}): ${line}`);
+        }
+      }, index * 100);
+    });
   }
 };
 
