@@ -95,6 +95,17 @@
       color: #000;
       margin-bottom: 20px;
     }
+    .tip {
+      margin-top: 30px;
+      padding: 12px 15px;
+      background: #ffffe1;
+      border: 1px solid #000;
+      font-family: 'Gulim', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      text-align: left;
+      color: #000;
+    }
     .btn-loopback {
       background: transparent;
       border: 2px solid var(--win-border-darker);
@@ -123,7 +134,13 @@
       </div>
       
       <button class="btn-copy" id="btn-copy">명령어 복사 (Copy)</button>
-      
+
+      <div class="tip">
+        ⚠️ 연결하기 전에 마인크래프트 <b>설정 → 일반</b>에서
+        <b>'암호화된 웹소켓 필요'</b>를 꺼 주세요.<br>
+        켜져 있으면 연결은 되어도 선생님 캐릭터를 찾지 못해 일부 기능이 동작하지 않습니다.
+      </div>
+
       <div class="status">
         <span id="status-text">서버 정보를 가져오는 중입니다...</span>
       </div>

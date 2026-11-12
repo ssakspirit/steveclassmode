@@ -280,7 +280,9 @@ function updateHostUI() {
 /** 호스트(선생님) 이름을 아직 모르면 안내 후 토글을 원래대로 되돌림 */
 function requireHost(toggleInput) {
   if (hostPlayerName) return true;
-  alert('선생님(호스트) 캐릭터를 아직 확인하지 못했습니다.\n몇 초 뒤에 다시 시도해주세요.');
+  alert('선생님(호스트) 캐릭터를 아직 확인하지 못했습니다.\n몇 초 뒤에 다시 시도해주세요.\n\n' +
+    '계속 이 안내가 뜨면 마인크래프트 설정 → 일반에서\n' +
+    '\'암호화된 웹소켓 필요\'를 끄고 /connect 로 다시 연결해주세요.');
   toggleInput.checked = !toggleInput.checked;
   return false;
 }
