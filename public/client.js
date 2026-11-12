@@ -363,7 +363,7 @@ function toggleSetting(type) {
   }
 
   // 호스트 제외 대상 명령(비행/모드 변경/권한)은 호스트를 알아야만 실행
-  const hostExcluded = ['flight', 'creative', 'operator', 'worldbuilder'];
+  const hostExcluded = ['flight', 'creative', 'operator', 'worldbuilder', 'mute'];
   if (hostExcluded.includes(type) && !requireHost(toggleInput)) return;
 
   const isChecked = toggleInput.checked;
@@ -440,6 +440,13 @@ function toggleSetting(type) {
       // 월드 빌더 권한 부여/회수 (호스트 제외 전체)
       sendCommand(`/ability @a[name=!"${hostPlayerName}"] worldbuilder ${isChecked ? 'true' : 'false'}`);
       console.log(`전체 학생 월드 빌더: ${isChecked}`);
+      break;
+
+    case 'mute':
+      // 채팅 금지 (호스트 제외 전체)
+      sendCommand(`/ability @a[name=!"${hostPlayerName}"] mute ${isChecked ? 'true' : 'false'}`);
+      sendCommand(`/tellraw @a {"rawtext":[{"text":"${isChecked ? '§c[알림] 지금부터 채팅이 금지됩니다.' : '§a[알림] 이제 다시 채팅할 수 있습니다.'}"}]}`);
+      console.log(`전체 학생 채팅 금지: ${isChecked}`);
       break;
   }
 }
