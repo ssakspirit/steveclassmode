@@ -360,8 +360,9 @@ function toggleSetting(type) {
     return;
   }
 
-  // 호스트 제외 대상 명령(비행/모드 변경)은 호스트를 알아야만 실행
-  if ((type === 'flight' || type === 'creative') && !requireHost(toggleInput)) return;
+  // 호스트 제외 대상 명령(비행/모드 변경/권한)은 호스트를 알아야만 실행
+  const hostExcluded = ['flight', 'creative', 'operator', 'worldbuilder'];
+  if (hostExcluded.includes(type) && !requireHost(toggleInput)) return;
 
   const isChecked = toggleInput.checked;
   const toggleText = toggleInput.closest('.mc-settings-row').querySelector('.toggle-text');
@@ -425,6 +426,18 @@ function toggleSetting(type) {
       // 크리에이티브 전환 (호스트 제외 전체)
       sendCommand(`/gamemode ${isChecked ? 'c' : 's'} @a[name=!"${hostPlayerName}"]`);
       console.log(`전체 학생 크리에이티브 모드: ${isChecked}`);
+      break;
+
+    case 'operator':
+      // 운영자 ↔ 멤버 권한 (호스트 제외 전체). 호스트가 deop되면 이 프로그램의 명령도 막히므로 반드시 제외
+      sendCommand(`/${isChecked ? 'op' : 'deop'} @a[name=!"${hostPlayerName}"]`);
+      console.log(`전체 학생 권한: ${isChecked ? '운영자' : '멤버'}`);
+      break;
+
+    case 'worldbuilder':
+      // 월드 빌더 권한 부여/회수 (호스트 제외 전체)
+      sendCommand(`/ability @a[name=!"${hostPlayerName}"] worldbuilder ${isChecked ? 'true' : 'false'}`);
+      console.log(`전체 학생 월드 빌더: ${isChecked}`);
       break;
   }
 }

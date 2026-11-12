@@ -484,7 +484,7 @@
           <div><b>제작자</b>: Stevecoding</div>
           <div><b>이메일</b>: <a href="mailto:ssakspirit@gmail.com" style="color:#3d6b1e;">ssakspirit@gmail.com</a></div>
           <div><b>유튜브</b>: <a href="https://www.youtube.com/@stevecoding" target="_blank" style="color:#3d6b1e;">@stevecoding</a></div>
-          <div><b>버전</b>: v1.1.1</div>
+          <div><b>버전</b>: v1.2.0</div>
           <div style="text-align:right; margin-top:8px;">
             <button onclick="document.getElementById('about-modal').style.display='none'" style="background:var(--win-bg); border-top:2px solid var(--win-border-light); border-left:2px solid var(--win-border-light); border-right:2px solid var(--win-border-darker); border-bottom:2px solid var(--win-border-darker); padding:6px 30px; cursor:pointer; font-family:'Silkscreen',sans-serif; font-size:16px;">OK</button>
           </div>
@@ -598,6 +598,26 @@
               <input type="checkbox" id="toggle-creative" class="mc-setting-input" onchange="toggleSetting('creative')">
               <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
               <span class="toggle-text">모드 변경</span>
+            </label>
+          </div>
+
+          <!-- 설정 8. 운영자 권한 -->
+          <div class="mc-settings-row" title="[운영자 권한] 선생님을 제외한 모든 학생의 권한을 멤버 ↔ 운영자로 일괄 변경합니다. 운영자는 명령어를 쓸 수 있습니다.">
+            <div class="mc-icon">👑</div>
+            <label class="mc-toggle-wrapper">
+              <input type="checkbox" id="toggle-operator" class="mc-setting-input" onchange="toggleSetting('operator')">
+              <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
+              <span class="toggle-text">운영자 권한</span>
+            </label>
+          </div>
+
+          <!-- 설정 9. 월드 빌더 -->
+          <div class="mc-settings-row" title="[월드 빌더] 선생님을 제외한 모든 학생에게 월드 빌더 권한을 주거나 뺍니다. 월드 빌더는 변경 불가 상태에서도 블록을 부수고 설치할 수 있습니다.">
+            <div class="mc-icon">🏗️</div>
+            <label class="mc-toggle-wrapper">
+              <input type="checkbox" id="toggle-worldbuilder" class="mc-setting-input" onchange="toggleSetting('worldbuilder')">
+              <div class="mc-toggle"><div class="mc-toggle-slider"></div></div>
+              <span class="toggle-text">월드 빌더</span>
             </label>
           </div>
 
