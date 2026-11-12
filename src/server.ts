@@ -104,6 +104,19 @@ let hostPlayerName: string | null = null; // 방장 (선생님) 이름 저장용
 let hostDetectRequestId: string | null = null; // 호스트 감지용 /testfor @s 요청 ID
 let listInterval: NodeJS.Timeout | null = null; // /list 주기 갱신 타이머 (연결당 1개)
 
+// ==================== 명령 흐름 제어 ====================
+// 마인크래프트는 '보냈지만 아직 응답하지 않은 명령'을 약 100개까지만 받고,
+// 넘치면 "요청된 명령어가 너무 많습니다" 오류로 거부한다.
+// → 응답 대기 중인 명령 수를 그보다 훨씬 적게 유지하고, 나머지는 줄 세워 두었다가 응답이 오면 보낸다.
+const MAX_IN_FLIGHT = 20;            // 동시에 응답을 기다리는 명령 최대 개수
+const PENDING_TIMEOUT_MS = 60_000;   // 이 시간 동안 응답이 없으면 잃어버린 것으로 보고 정리
+const MAX_QUEUE = 200;               // 대기열 최대 길이 (넘치면 새 명령을 버림)
+
+type CommandKind = 'user' | 'list' | 'hostDetect';
+interface QueuedCommand { requestId: string; commandLine: string; kind: CommandKind; }
+const pendingCommands: Map<string, QueuedCommand & { sentAt: number }> = new Map();
+let commandQueue: QueuedCommand[] = [];
+
 // ==================== 접속 보안 ====================
 
 /** 이 컴퓨터(루프백)에서 온 접속인지 확인 — 같은 와이파이의 다른 PC 차단 */
@@ -241,6 +254,7 @@ async function startServer() {
       }
       minecraftConnection = ws;
       hostPlayerName = null; // 새 연결마다 호스트를 다시 감지
+      resetCommandFlow();    // 대기 명령 수는 연결마다 따로 셈
       console.log(`✅ 마인크래프트 클라이언트 확인됨! (${clientId})`);
 
       // 웹 클라이언트들에게 마인크래프트 연결 알림
@@ -280,6 +294,11 @@ async function startServer() {
 
         const mcMessage = message as WsEvent;
 
+        // 응답(성공/오류)이 온 명령은 대기 목록에서 빼고, 줄 서 있던 다음 명령을 보냄
+        if (ws === minecraftConnection) {
+          settleCommand(mcMessage.header?.requestId);
+        }
+
         handleMinecraftEvent(mcMessage);
 
         // 웹 클라이언트들에게 브로드캐스트
@@ -299,6 +318,7 @@ async function startServer() {
         minecraftConnection = null;
         hostPlayerName = null; // 호스트 연결 해제
         hostDetectRequestId = null;
+        resetCommandFlow();
         if (listInterval) {
           clearInterval(listInterval);
           listInterval = null;
@@ -331,6 +351,12 @@ async function startServer() {
 
     const messagePurpose = event.header?.messagePurpose;
     const eventName = event.body?.eventName || event.header?.eventName;
+
+    // 마인크래프트가 명령 자체를 거부한 경우 (예: 명령이 너무 많음) → 대시보드에 안내
+    if (messagePurpose === 'error') {
+      notifyWebSystem(`⚠️ 마인크래프트가 명령을 처리하지 못했습니다: ${event.body?.statusMessage || '알 수 없는 오류'}`);
+      return;
+    }
 
     // commandResponse: 명령 응답에서 발신자/플레이어 이름 추출
     if (messagePurpose === 'commandResponse') {
@@ -574,18 +600,17 @@ async function startServer() {
       body: { eventName }
     });
 
-    const sendInternalCommand = (commandLine: string): string => {
-      const requestId = uuidv4();
-      conn.send(JSON.stringify({
-        header: { requestId, messagePurpose: 'commandRequest', version: 1, messageType: 'commandRequest' },
-        body: { version: 1, commandLine, origin: { type: 'player' } }
-      }));
-      return requestId;
+    // 자동 명령은 같은 종류가 아직 응답 전이면 또 보내지 않음
+    // (게임이 잠시 명령을 처리하지 못하는 동안 5초마다 쌓여 100개를 넘던 문제 방지)
+    const sendListIfIdle = () => {
+      if (!hasOutstanding('list')) enqueueCommand('/list', 'list');
     };
 
     // /testfor @s → 응답의 victim[0]이 호스트 (requestId로 응답을 구분)
     const requestHostDetect = () => {
-      hostDetectRequestId = sendInternalCommand('/testfor @s');
+      if (hasOutstanding('hostDetect')) return;
+      const requestId = enqueueCommand('/testfor @s', 'hostDetect');
+      if (requestId) hostDetectRequestId = requestId;
     };
 
     // 구독 메시지를 300ms 간격으로 순차 전송 (동시 전송 시 Minecraft가 일부 무시할 수 있음)
@@ -611,7 +636,7 @@ async function startServer() {
     setTimeout(() => {
       if (isSameOpenConnection()) {
         console.log('🔍 [2/2] 전체 접속자 파악 위한 /list 전송');
-        sendInternalCommand('/list');
+        sendListIfIdle();
       }
     }, 2500);
 
@@ -624,11 +649,70 @@ async function startServer() {
         if (listInterval === thisInterval) listInterval = null;
         return;
       }
-      sendInternalCommand('/list');
+      drainCommandQueue(); // 오래된 대기 명령 정리 + 남은 명령 전송
+      sendListIfIdle();
       // 호스트를 아직 못 찾았으면 다시 시도
       if (!hostPlayerName) requestHostDetect();
     }, 5000);
     listInterval = thisInterval;
+  }
+
+  function resetCommandFlow() {
+    pendingCommands.clear();
+    commandQueue = [];
+  }
+
+  /** 해당 종류의 명령이 대기열에 있거나 응답을 기다리는 중인지 */
+  function hasOutstanding(kind: CommandKind): boolean {
+    if (commandQueue.some(c => c.kind === kind)) return true;
+    for (const c of pendingCommands.values()) {
+      if (c.kind === kind) return true;
+    }
+    return false;
+  }
+
+  /** 명령을 대기열에 넣고 보낼 수 있는 만큼 보냄. 반환값은 requestId (실패 시 null) */
+  function enqueueCommand(commandLine: string, kind: CommandKind): string | null {
+    if (!minecraftConnection || minecraftConnection.readyState !== WebSocket.OPEN) {
+      return null;
+    }
+    if (commandQueue.length >= MAX_QUEUE) {
+      console.warn(`⚠️ 명령 대기열이 가득 차서 버림: ${commandLine}`);
+      notifyWebSystem('⚠️ 마인크래프트가 응답하지 않아 명령이 밀려 있습니다. 게임 화면을 확인해주세요.');
+      return null;
+    }
+    const cmd: QueuedCommand = { requestId: uuidv4(), commandLine, kind };
+    commandQueue.push(cmd);
+    drainCommandQueue();
+    return cmd.requestId;
+  }
+
+  /** 응답 대기 수가 한도 아래인 동안 대기열의 명령을 순서대로 보냄 */
+  function drainCommandQueue() {
+    const conn = minecraftConnection;
+    if (!conn || conn.readyState !== WebSocket.OPEN) return;
+
+    const now = Date.now();
+    pendingCommands.forEach((c, id) => {
+      if (now - c.sentAt > PENDING_TIMEOUT_MS) pendingCommands.delete(id);
+    });
+
+    while (pendingCommands.size < MAX_IN_FLIGHT && commandQueue.length > 0) {
+      const cmd = commandQueue.shift()!;
+      pendingCommands.set(cmd.requestId, { ...cmd, sentAt: now });
+      const commandRequest: CommandRequest = {
+        header: { requestId: cmd.requestId, messagePurpose: 'commandRequest', version: 1, messageType: 'commandRequest' },
+        body: { version: 1, commandLine: cmd.commandLine, origin: { type: 'player' } }
+      };
+      conn.send(JSON.stringify(commandRequest));
+    }
+  }
+
+  /** 마인크래프트에서 응답이 온 명령을 대기 목록에서 제거 */
+  function settleCommand(requestId: string | undefined) {
+    if (requestId && pendingCommands.delete(requestId)) {
+      drainCommandQueue();
+    }
   }
 
   function sendCommand(commandLine: string): boolean {
@@ -637,27 +721,22 @@ async function startServer() {
       return false;
     }
 
-    const commandRequest: CommandRequest = {
-      header: {
-        requestId: uuidv4(),
-        messagePurpose: 'commandRequest',
-        version: 1,
-        messageType: 'commandRequest'
-      },
-      body: {
-        version: 1,
-        commandLine: commandLine,
-        origin: {
-          type: 'player'
-        }
-      }
-    };
-
     console.log(`📤 [명령 전송] ${commandLine}`);
     logToFile(`COMMAND: ${commandLine}`);
 
-    minecraftConnection.send(JSON.stringify(commandRequest));
-    return true;
+    return enqueueCommand(commandLine, 'user') !== null;
+  }
+
+  // 같은 안내가 한꺼번에 수십 번 뜨지 않도록 5초에 한 번만 보냄
+  let lastSystemNotice = '';
+  let lastSystemNoticeAt = 0;
+  function notifyWebSystem(text: string) {
+    const now = Date.now();
+    if (text === lastSystemNotice && now - lastSystemNoticeAt < 5000) return;
+    lastSystemNotice = text;
+    lastSystemNoticeAt = now;
+    console.log(text);
+    broadcastToWebClients({ type: 'system_message', data: { message: text } });
   }
 
   // ==================== 웹 클라이언트 통신 ====================

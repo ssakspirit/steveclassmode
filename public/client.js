@@ -129,6 +129,13 @@ function handleServerMessage(message) {
     case 'command_response':
       break;
 
+    case 'system_message':
+      // 서버 안내 (예: 마인크래프트가 명령을 거부함)
+      if (message.data && message.data.message) {
+        addChatMessage(null, message.data.message);
+      }
+      break;
+
     case 'minecraft_connected':
       console.log('🎮 마인크래프트가 서버에 연결되었습니다!');
       isMinecraftConnected = true;
