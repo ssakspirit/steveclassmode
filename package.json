@@ -1,6 +1,6 @@
 {
   "name": "steve-classroom-mode",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Minecraft Education Edition WebSocket 학습보조 도구 (클래스룸 모드 재현)",
   "main": "dist/server.js",
   "bin": "dist/server.js",
